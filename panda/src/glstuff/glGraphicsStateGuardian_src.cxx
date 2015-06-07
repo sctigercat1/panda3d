@@ -304,7 +304,8 @@ int CLP(GraphicsStateGuardian)::get_driver_shader_version_minor() { return _gl_s
 ////////////////////////////////////////////////////////////////////
 CLP(GraphicsStateGuardian)::
 CLP(GraphicsStateGuardian)(GraphicsEngine *engine, GraphicsPipe *pipe) :
-  GraphicsStateGuardian(CS_yup_right, engine, pipe)
+  GraphicsStateGuardian(gl_coordinate_system, engine, pipe),
+  _renderbuffer_residency(get_prepared_objects()->get_name(), "renderbuffer")
 {
   _error_count = 0;
 
@@ -1129,6 +1130,9 @@ reset() {
 #else
   _supports_depth_texture = (is_at_least_gl_version(1, 4) ||
                              has_extension("GL_ARB_depth_texture"));
+  _supports_depth_stencil = (is_at_least_gl_version(3, 0) ||
+                             has_extension("GL_ARB_framebuffer_object") ||
+                             has_extension("GL_EXT_packed_depth_stencil"));
 #endif
 
 #ifdef OPENGLES_2
@@ -1455,6 +1459,23 @@ reset() {
   if (_default_shader == NULL) {
     _default_shader = Shader::make(Shader::SL_GLSL, default_vshader, default_fshader);
   }
+#endif
+
+#ifndef OPENGLES
+  // Check for uniform buffers.
+  if (is_at_least_gl_version(3, 1) || has_extension("GL_ARB_uniform_buffer_object")) {
+    _supports_uniform_buffers = true;
+    _glGetActiveUniformsiv = (PFNGLGETACTIVEUNIFORMSIVPROC)
+       get_extension_func("glGetActiveUniformsiv");
+    _glGetActiveUniformBlockiv = (PFNGLGETACTIVEUNIFORMBLOCKIVPROC)
+       get_extension_func("glGetActiveUniformBlockiv");
+    _glGetActiveUniformBlockName = (PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC)
+       get_extension_func("glGetActiveUniformBlockName");
+  } else {
+    _supports_uniform_buffers = false;
+  }
+#else
+  _supports_uniform_buffers = false;
 #endif
 
   // Check whether we support geometry instancing and instanced vertex attribs.
@@ -2878,7 +2899,8 @@ calc_projection_mat(const Lens *lens) {
   // choice in the modelview matrix.
 
   LMatrix4 result =
-    LMatrix4::convert_mat(CS_yup_right, lens->get_coordinate_system()) *
+    LMatrix4::convert_mat(_internal_coordinate_system,
+                          lens->get_coordinate_system()) *
     lens->get_projection_mat(_current_stereo_channel);
 
   if (_scene_setup->get_inverted()) {
@@ -2938,6 +2960,8 @@ begin_frame(Thread *current_thread) {
   if (!GraphicsStateGuardian::begin_frame(current_thread)) {
     return false;
   }
+  _renderbuffer_residency.begin_frame(current_thread);
+
   report_my_gl_errors();
 
 #ifdef DO_PSTATS
@@ -3097,6 +3121,8 @@ end_frame(Thread *current_thread) {
   maybe_gl_finish();
 
   GraphicsStateGuardian::end_frame(current_thread);
+
+  _renderbuffer_residency.end_frame(current_thread);
 
   // Flush any PCollectors specific to this kind of GSG.
   _primitive_batches_display_list_pcollector.flush_level();
@@ -3803,7 +3829,7 @@ disable_standard_vertex_arrays() {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_triangles(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
 
 #ifndef NDEBUG
   if (GLCAT.is_spam()) {
@@ -3870,7 +3896,7 @@ draw_triangles(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_tristrips(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
 
   report_my_gl_errors();
 
@@ -3997,7 +4023,8 @@ draw_tristrips(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_trifans(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+
 #ifndef NDEBUG
   if (GLCAT.is_spam()) {
     GLCAT.spam() << "draw_trifans: " << *(reader->get_object()) << "\n";
@@ -4077,7 +4104,7 @@ draw_trifans(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_patches(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
 
 #ifndef NDEBUG
   if (GLCAT.is_spam()) {
@@ -4153,7 +4180,8 @@ draw_patches(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_lines(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+
 #ifndef NDEBUG
   if (GLCAT.is_spam()) {
     GLCAT.spam() << "draw_lines: " << *(reader->get_object()) << "\n";
@@ -4217,7 +4245,7 @@ draw_lines(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_linestrips(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
 
   report_my_gl_errors();
 
@@ -4341,7 +4369,8 @@ draw_linestrips(const GeomPrimitivePipelineReader *reader, bool force) {
 ////////////////////////////////////////////////////////////////////
 bool CLP(GraphicsStateGuardian)::
 draw_points(const GeomPrimitivePipelineReader *reader, bool force) {
-  PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+  //PStatGPUTimer timer(this, _draw_primitive_pcollector, reader->get_current_thread());
+
 #ifndef NDEBUG
   if (GLCAT.is_spam()) {
     GLCAT.spam() << "draw_points: " << *(reader->get_object()) << "\n";
@@ -7388,7 +7417,11 @@ get_numeric_type(Geom::NumericType numeric_type) {
     return GL_SHORT;
 
   case Geom::NT_int32:
+#ifndef OPENGLES_1
     return GL_INT;
+#else
+    break;
+#endif
 
   case Geom::NT_packed_ufloat:
 #ifndef OPENGLES
@@ -10960,9 +10993,7 @@ upload_texture(CLP(TextureContext) *gtc, bool force, bool uses_mipmaps) {
       gtc->_width = width;
       gtc->_height = height;
       gtc->_depth = depth;
-    }
 
-    if (!image.is_null()) {
       gtc->update_data_size_bytes(get_texture_memory_size(tex));
     }
 
@@ -11207,7 +11238,7 @@ upload_texture_image(CLP(TextureContext) *gtc, bool needs_reload,
 #ifndef OPENGLES
       case GL_TEXTURE_BUFFER:
         if (_supports_buffer_texture) {
-          _glBufferSubData(GL_TEXTURE_BUFFER, 0, width, image_ptr);
+          _glBufferSubData(GL_TEXTURE_BUFFER, 0, view_size, image_ptr);
         } else {
           report_my_gl_errors();
           return false;
@@ -11391,7 +11422,7 @@ upload_texture_image(CLP(TextureContext) *gtc, bool needs_reload,
 #ifndef OPENGLES
       case GL_TEXTURE_BUFFER:
         if (_supports_buffer_texture) {
-          _glBufferData(GL_TEXTURE_BUFFER, width, image_ptr,
+          _glBufferData(GL_TEXTURE_BUFFER, view_size, image_ptr,
                         get_usage(tex->get_usage_hint()));
         } else {
           report_my_gl_errors();

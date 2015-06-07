@@ -636,6 +636,7 @@ protected:
   GLint _max_image_units;
   bool _supports_multi_bind;
   bool _supports_get_program_binary;
+  bool _supports_uniform_buffers;
 
 #ifdef OPENGLES
   bool _supports_depth24;
@@ -845,6 +846,9 @@ public:
   PFNGLDRAWELEMENTSINSTANCEDPROC _glDrawElementsInstanced;
 #endif  // !OPENGLES_1
 #ifndef OPENGLES
+  PFNGLGETACTIVEUNIFORMSIVPROC _glGetActiveUniformsiv;
+  PFNGLGETACTIVEUNIFORMBLOCKIVPROC _glGetActiveUniformBlockiv;
+  PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC _glGetActiveUniformBlockName;
   PFNGLGENSAMPLERSPROC _glGenSamplers;
   PFNGLDELETESAMPLERSPROC _glDeleteSamplers;
   PFNGLBINDSAMPLERPROC _glBindSampler;
@@ -922,6 +926,8 @@ public:
   typedef pmap<UsageTextureKey, GLuint> UsageTextures;
   UsageTextures _usage_textures;
 #endif  // NDEBUG
+
+  BufferResidencyTracker _renderbuffer_residency;
 
   static PStatCollector _load_display_list_pcollector;
   static PStatCollector _primitive_batches_display_list_pcollector;
