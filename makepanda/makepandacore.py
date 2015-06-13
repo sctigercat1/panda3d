@@ -478,6 +478,14 @@ def LocateBinary(binary):
         p = os.environ["PATH"]
 
     pathList = p.split(os.pathsep)
+    
+    # Nirai hack
+    if GetHost() == 'windows' and not binary.endswith('.exe'):
+        binary += '.exe'
+        
+    basename = os.path.basename(binary)
+    if os.path.isfile('prebuilt/' + basename):
+        return 'prebuilt/' + basename
 
     if GetHost() == 'windows':
         if not binary.endswith('.exe'):
@@ -2768,7 +2776,7 @@ def CalcLocation(fn, ipath):
 
 
 def FindLocation(fn, ipath):
-    if (GetLinkAllStatic() and fn.endswith(".dll")):
+    if (GetLinkAllStatic() and (fn.endswith(".dll") or fn.endswith(".pyd"))):
         fn = fn[:-4] + ".lib"
     loc = CalcLocation(fn, ipath)
     base, ext = os.path.splitext(fn)

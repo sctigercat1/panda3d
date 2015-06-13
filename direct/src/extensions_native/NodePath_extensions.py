@@ -1,3 +1,7 @@
+from extension_native_helpers import *
+Dtool_PreloadDLL("libpanda")
+from libpanda import *
+
 ####################################################################
 #Dtool_funcToMethod(func, class)
 #del func
@@ -11,7 +15,6 @@ of the NodePath class
 ####################################################################
 def id(self):
         """Returns a unique id identifying the NodePath instance"""
-        print "Warning: NodePath.id() is deprecated.  Use hash(NodePath) or NodePath.get_key() instead."
         return self.getKey()
 
 Dtool_funcToMethod(id, NodePath)
@@ -25,7 +28,7 @@ del id
     # For iterating over children
 def getChildrenAsList(self):
         """Converts a node path's child NodePathCollection into a list"""
-        print "Warning: NodePath.getChildrenAsList() is deprecated.  Use get_children() instead."
+        print "Warning: NodePath.getChildrenAsList() is deprecated.  Use getChildren() instead."
         return list(self.getChildren())
 
 Dtool_funcToMethod(getChildrenAsList, NodePath)
@@ -96,7 +99,6 @@ del isolate
 
 def remove(self):
         """Remove a node path from the scene graph"""
-        print "Warning: NodePath.remove() is deprecated.  Use remove_node() instead."
         # Send message in case anyone needs to do something
         # before node is deleted
         messenger.send('preRemoveNodePath', [self])
@@ -146,13 +148,22 @@ del reverseLsNames
 #####################################################################
 def getAncestry(self):
         """Get a list of a node path's ancestors"""
-        print "NodePath.getAncestry() is deprecated.  Use get_ancestors() instead."""
+        print "NodePath.getAncestry() is deprecated.  Use getAncestors() instead."""
         ancestors = list(self.getAncestors())
         ancestors.reverse()
         return ancestors
 
 Dtool_funcToMethod(getAncestry, NodePath)
 del getAncestry
+#####################################################################
+def getTightBounds(self):
+        from pandac.PandaModules import Point3
+        v1 = Point3(0)
+        v2 = Point3(0)
+        self.calcTightBounds(v1, v2)
+        return v1, v2
+Dtool_funcToMethod(getTightBounds, NodePath)
+del getTightBounds
 #####################################################################
 
 def pPrintString(self, other = None):
@@ -394,7 +405,7 @@ def __lerp(self, functorFunc, duration, blendType, taskName=None):
         # functor creation is defered so initial state (sampled in functorFunc)
         # will be appropriate for the time the lerp is spawned
         from direct.task import Task
-        from direct.interval import LerpBlendHelpers
+        from direct.showbase import LerpBlendHelpers
         from direct.task.TaskManagerGlobal import taskMgr
 
         # make the task function
@@ -440,7 +451,7 @@ def __autoLerp(self, functorFunc, time, blendType, taskName):
         This lerp uses C++ to handle the stepping. Bonus is
         its more efficient, trade-off is there is less control"""
         from pandac.PandaModules import AutonomousLerp
-        from direct.interval import LerpBlendHelpers
+        from direct.showbase import LerpBlendHelpers
         # make a lerp that lives in C++ land
         functor = functorFunc()
         lerp = AutonomousLerp(functor, time,

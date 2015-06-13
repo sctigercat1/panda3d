@@ -1375,7 +1375,8 @@ def CompileIgate(woutd,wsrc,opts):
             cmd += ' -D' + var + '=' + val
 
     #building = GetValueOption(opts, "BUILDING:")
-    #if (building): cmd += " -DBUILDING_"+building
+    #if (building): cmd += " -DBUILDING_"+building    
+
     cmd += ' -module ' + module + ' -library ' + library
     for x in wsrc:
         if (x.startswith("/")):
@@ -1435,6 +1436,8 @@ def CompileLib(lib, obj, opts):
                 cmd += " /LTCG"
             if HasTargetArch():
                 cmd += " /MACHINE:" + GetTargetArch().upper()
+            if GetLinkAllStatic():
+                cmd += ' /ignore:4006 /ignore:4221'
             cmd += ' /OUT:' + BracketNameWithQuotes(lib)
             for x in obj: cmd += ' ' + BracketNameWithQuotes(x)
             oscmd(cmd)
@@ -1442,7 +1445,7 @@ def CompileLib(lib, obj, opts):
             # Choose Intel linker; from Jean-Claude
             cmd = 'xilink /verbose:lib /lib '
             if HasTargetArch():
-                cmd += " /MACHINE:" + GetTargetArch().upper()
+                cmd += " /MACHINE:" + GetTargetArch().upper()           
             cmd += ' /OUT:' + BracketNameWithQuotes(lib)
             for x in obj: cmd += ' ' + BracketNameWithQuotes(x)
             cmd += ' /LIBPATH:"C:\Program Files (x86)\Intel\Composer XE 2011 SP1\ipp\lib\ia32"'
@@ -1952,6 +1955,8 @@ def CompileAnything(target, inputs, opts, progress = None):
         return CompileLib(target, inputs, opts)
     elif origsuffix in SUFFIX_DLL or (origsuffix==".plugin" and GetTarget() != "darwin"):
         if (origsuffix==".exe"):
+            if GetLinkAllStatic():
+                return
             ProgressOutput(progress, "Linking executable", target)
         else:
             ProgressOutput(progress, "Linking dynamic library", target)
@@ -3828,7 +3833,8 @@ if (not RUNTIME):
   TargetAdd('core.pyd', input='p3display_pythonGraphicsWindowProc.obj')
 
   TargetAdd('core.pyd', input='core_module.obj')
-  TargetAdd('core.pyd', input='libp3tinyxml.ilb')
+  if not GetLinkAllStatic():
+    TargetAdd('core.pyd', input='libp3tinyxml.ilb')
   TargetAdd('core.pyd', input=COMMON_PANDA_LIBS)
   TargetAdd('core.pyd', opts=['PYTHON', 'WINSOCK2'])
 
@@ -4801,7 +4807,11 @@ if (PkgSkip("DIRECT")==0):
   TargetAdd('direct_module.obj', input='libp3interval.in')
   TargetAdd('direct_module.obj', input='libp3distributed.in')
   TargetAdd('direct_module.obj', opts=OPTS)
-  TargetAdd('direct_module.obj', opts=['IMOD:panda3d.direct', 'ILIB:direct', 'IMPORT:panda3d.core'])
+  
+  # Nirai hack:
+  # Because all panda3d.xxx modules stay in builtin and lack the prefix
+  # we need to rename panda3d.direct alias in order to avoid conflicts with Python direct.
+  TargetAdd('direct_module.obj', opts=['IMOD:panda3d.direct', 'ILIB:_c_direct', 'IMPORT:panda3d.core'])
 
   TargetAdd('direct.pyd', input='libp3dcparser_igate.obj')
   TargetAdd('direct.pyd', input='libp3showbase_igate.obj')
