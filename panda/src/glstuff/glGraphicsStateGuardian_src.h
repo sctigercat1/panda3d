@@ -525,7 +525,6 @@ protected:
   void upload_usage_texture(int width, int height);
 #endif  // NDEBUG
 
-  void do_auto_rescale_normal();
   bool specify_texture(CLP(TextureContext) *gtc, const SamplerState &sampler);
   bool apply_texture(TextureContext *tc);
   bool apply_sampler(GLuint unit, const SamplerState &sampler, TextureContext *tc);
@@ -625,7 +624,6 @@ protected:
   DirectionalLights _dlights;
 
   int _pass_number;
-  bool _auto_rescale_normal;
   GLuint _geom_display_list;
   GLuint _current_vbuffer_index;
   GLuint _current_ibuffer_index;
@@ -636,6 +634,7 @@ protected:
   GLint _max_image_units;
   bool _supports_multi_bind;
   bool _supports_get_program_binary;
+  bool _supports_uniform_buffers;
 
 #ifdef OPENGLES
   bool _supports_depth24;
@@ -845,6 +844,9 @@ public:
   PFNGLDRAWELEMENTSINSTANCEDPROC _glDrawElementsInstanced;
 #endif  // !OPENGLES_1
 #ifndef OPENGLES
+  PFNGLGETACTIVEUNIFORMSIVPROC _glGetActiveUniformsiv;
+  PFNGLGETACTIVEUNIFORMBLOCKIVPROC _glGetActiveUniformBlockiv;
+  PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC _glGetActiveUniformBlockName;
   PFNGLGENSAMPLERSPROC _glGenSamplers;
   PFNGLDELETESAMPLERSPROC _glDeleteSamplers;
   PFNGLBINDSAMPLERPROC _glBindSampler;
@@ -922,6 +924,8 @@ public:
   typedef pmap<UsageTextureKey, GLuint> UsageTextures;
   UsageTextures _usage_textures;
 #endif  // NDEBUG
+
+  BufferResidencyTracker _renderbuffer_residency;
 
   static PStatCollector _load_display_list_pcollector;
   static PStatCollector _primitive_batches_display_list_pcollector;
