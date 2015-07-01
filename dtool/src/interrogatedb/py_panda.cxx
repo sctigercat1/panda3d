@@ -278,6 +278,29 @@ PyObject *Dtool_Raise_ArgTypeError(PyObject *obj, int param, const char *functio
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: Dtool_Raise_AttributeError
+//  Description: Raises an AttributeError of the form:
+//               'type' has no attribute 'attr'
+//
+//               Always returns NULL so that it can be conveniently
+//               used as a return expression for wrapper functions
+//               that return a PyObject pointer.
+////////////////////////////////////////////////////////////////////
+PyObject *Dtool_Raise_AttributeError(PyObject *obj, const char *attribute) {
+#if PY_MAJOR_VERSION >= 3
+  PyObject *message = PyUnicode_FromFormat(
+#else
+  PyObject *message = PyString_FromFormat(
+#endif
+    "'%.100s' object has no attribute '%.200s'",
+    Py_TYPE(obj)->tp_name, attribute);
+
+  Py_INCREF(PyExc_TypeError);
+  PyErr_Restore(PyExc_TypeError, message, (PyObject *)NULL);
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: Dtool_Raise_BadArgumentsError
 //  Description: Raises a TypeError of the form:
 //               Arguments must match:
@@ -332,6 +355,24 @@ PyObject *Dtool_Return_Bool(bool value) {
   PyObject *result = (value ? Py_True : Py_False);
   Py_INCREF(result);
   return result;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: Dtool_Return
+//  Description: Convenience method that checks for exceptions, and
+//               if one occurred, returns NULL, otherwise the given
+//               return value.  Its reference count is not increased.
+////////////////////////////////////////////////////////////////////
+PyObject *_Dtool_Return(PyObject *value) {
+  if (_PyErr_OCCURRED()) {
+    return NULL;
+  }
+#ifndef NDEBUG
+  if (Notify::ptr()->has_assert_failed()) {
+    return Dtool_Raise_AssertionError();
+  }
+#endif
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -769,7 +810,7 @@ PyObject *DTOOL_PyObject_RichCompare(PyObject *v1, PyObject *v2, int op) {
 //  Description: This is a support function for a synthesized
 //               __copy__() method from a C++ make_copy() method.
 ////////////////////////////////////////////////////////////////////
-PyObject *copy_from_make_copy(PyObject *self) {
+PyObject *copy_from_make_copy(PyObject *self, PyObject *noargs) {
   return PyObject_CallMethod(self, (char *)"make_copy", (char *)"()");
 }
 
@@ -778,7 +819,7 @@ PyObject *copy_from_make_copy(PyObject *self) {
 //  Description: This is a support function for a synthesized
 //               __copy__() method from a C++ copy constructor.
 ////////////////////////////////////////////////////////////////////
-PyObject *copy_from_copy_constructor(PyObject *self) {
+PyObject *copy_from_copy_constructor(PyObject *self, PyObject *noargs) {
   PyObject *this_class = PyObject_Type(self);
   if (this_class == NULL) {
     return NULL;

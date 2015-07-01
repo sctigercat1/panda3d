@@ -135,6 +135,8 @@ int write_python_table_native(ostream &out) {
       << "\n"
       << "#ifdef _WIN32\n"
       << "extern \"C\" __declspec(dllexport) PyObject *PyInit_" << library_name << "();\n"
+      << "#elif __GNUC__ >= 4\n"
+      << "extern \"C\" __attribute__((visibility(\"default\"))) PyObject *PyInit_" << library_name << "();\n"
       << "#else\n"
       << "extern \"C\" PyObject *PyInit_" << library_name << "();\n"
       << "#endif\n"
@@ -180,6 +182,8 @@ int write_python_table_native(ostream &out) {
       << "\n"
       << "#ifdef _WIN32\n"
       << "extern \"C\" __declspec(dllexport) void init" << library_name << "();\n"
+      << "#elif __GNUC__ >= 4\n"
+      << "extern \"C\" __attribute__((visibility(\"default\"))) void init" << library_name << "();\n"
       << "#else\n"
       << "extern \"C\" void init" << library_name << "();\n"
       << "#endif\n"
@@ -209,7 +213,7 @@ int write_python_table_native(ostream &out) {
 
   out << "NULL};\n"
       << "\n"
-      << "  PyObject *module = Dtool_PyModuleInitHelper(defs, \"" << library_name << "\");\n"
+      << "  PyObject *module = Dtool_PyModuleInitHelper(defs, \"" << module_name << "\");\n"
       << "  if (module != NULL) {\n";
 
   for (ii = libraries.begin(); ii != libraries.end(); ii++) {
