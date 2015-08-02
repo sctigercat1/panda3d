@@ -344,6 +344,7 @@ EXPCL_DTOOLCONFIG bool Dtool_CheckErrorOccurred();
 EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_AssertionError();
 EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_TypeError(const char *message);
 EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_ArgTypeError(PyObject *obj, int param, const char *function_name, const char *type_name);
+EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_AttributeError(PyObject *obj, const char *attribute);
 
 EXPCL_DTOOLCONFIG PyObject *_Dtool_Raise_BadArgumentsError();
 #ifdef NDEBUG
@@ -356,11 +357,14 @@ EXPCL_DTOOLCONFIG PyObject *_Dtool_Raise_BadArgumentsError();
 
 EXPCL_DTOOLCONFIG PyObject *_Dtool_Return_None();
 EXPCL_DTOOLCONFIG PyObject *Dtool_Return_Bool(bool value);
+EXPCL_DTOOLCONFIG PyObject *_Dtool_Return(PyObject *value);
 
 #ifdef NDEBUG
 #define Dtool_Return_None() (_PyErr_OCCURRED() != NULL ? NULL : (Py_INCREF(Py_None), Py_None))
+#define Dtool_Return(value) (_PyErr_OCCURRED() != NULL ? NULL : value)
 #else
 #define Dtool_Return_None() _Dtool_Return_None()
+#define Dtool_Return(value) _Dtool_Return(value)
 #endif
 
 ////////////////////////////////////////////////////////////////////////
@@ -505,10 +509,10 @@ EXPCL_DTOOLCONFIG int DTOOL_PyObject_Compare(PyObject *v1, PyObject *v2);
 EXPCL_DTOOLCONFIG PyObject *DTOOL_PyObject_RichCompare(PyObject *v1, PyObject *v2, int op);
 
 EXPCL_DTOOLCONFIG PyObject *
-copy_from_make_copy(PyObject *self);
+copy_from_make_copy(PyObject *self, PyObject *noargs);
 
 EXPCL_DTOOLCONFIG PyObject *
-copy_from_copy_constructor(PyObject *self);
+copy_from_copy_constructor(PyObject *self, PyObject *noargs);
 
 EXPCL_DTOOLCONFIG PyObject *
 map_deepcopy_to_copy(PyObject *self, PyObject *args);
