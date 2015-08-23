@@ -1182,7 +1182,7 @@ set_wm_properties(const WindowProperties &properties, bool already_mapped) {
   nassertv(next_set_data < max_set_data);
 
   // Add the process ID as a convenience for other applications.
-  PN_int32 pid = getpid();
+  Cardinal pid = getpid();
   XChangeProperty(_display, _xwindow, x11_pipe->_net_wm_pid,
                   XA_CARDINAL, 32, PropModeReplace,
                   (unsigned char *)&pid, 1);
@@ -2148,6 +2148,7 @@ get_cursor(const Filename &filename) {
   }
   fi = _cursor_filenames.find(resolved);
   if (fi != _cursor_filenames.end()) {
+    _cursor_filenames[filename] = (*fi).second;
     return fi->second;
   }
 

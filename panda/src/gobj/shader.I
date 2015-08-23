@@ -49,7 +49,7 @@ get_filename(const ShaderType &type) const {
 
   } else {
     // Um, better than nothing?
-    return _filename._fragment;
+    return _filename._vertex;
   }
 }
 

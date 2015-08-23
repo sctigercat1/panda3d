@@ -1,5 +1,3 @@
-__all__ = ["PatchMaker"]
-
 from direct.p3d.FileSpec import FileSpec
 from direct.p3d.SeqValue import SeqValue
 from panda3d.core import *

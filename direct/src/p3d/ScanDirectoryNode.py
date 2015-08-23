@@ -1,5 +1,3 @@
-__all__ = ["ScanDirectoryNode"]
-
 from panda3d.core import VirtualFileSystem, VirtualFileMountSystem, Filename, TiXmlDocument
 vfs = VirtualFileSystem.getGlobalPtr()
 

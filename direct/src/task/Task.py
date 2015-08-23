@@ -11,7 +11,9 @@ from direct.showbase import ExceptionVarDump
 from direct.showbase.PythonUtil import *
 from direct.showbase.MessengerGlobal import messenger
 import types
+import time
 import random
+import string
 
 try:
     import signal

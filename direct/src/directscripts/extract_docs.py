@@ -7,7 +7,7 @@ files in the lib/pandac/input directory. """
 
 __all__ = []
 
-import os
+import os, re
 import panda3d, pandac
 from panda3d.dtoolconfig import *
 

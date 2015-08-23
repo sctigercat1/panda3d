@@ -83,7 +83,6 @@ PUBLISHED:
     SM_30,
     SM_40,
     SM_50,
-    SM_51,
   };
 
   INLINE void release_all();
@@ -167,8 +166,8 @@ PUBLISHED:
   INLINE int get_max_color_targets() const;
   INLINE int get_maximum_simultaneous_render_targets() const;
 
-  INLINE ShaderModel get_shader_model() const;
-  INLINE void set_shader_model(ShaderModel shader_model);
+  INLINE int get_shader_model() const;
+  INLINE void set_shader_model(int shader_model);
 
   virtual int get_supported_geom_rendering() const;
   virtual bool get_supports_cg_profile(const string &name) const;
@@ -546,8 +545,8 @@ protected:
 
   int  _stereo_buffer_mask;
 
-  ShaderModel _auto_detect_shader_model;
-  ShaderModel _shader_model;
+  int _auto_detect_shader_model;
+  int _shader_model;
 
   static PT(TextureStage) _alpha_scale_texture_stage;
 
@@ -664,8 +663,6 @@ private:
   friend class GraphicsWindow;
   friend class GraphicsEngine;
 };
-
-EXPCL_PANDA_DISPLAY ostream &operator << (ostream &out, GraphicsStateGuardian::ShaderModel sm);
 
 #include "graphicsStateGuardian.I"
 

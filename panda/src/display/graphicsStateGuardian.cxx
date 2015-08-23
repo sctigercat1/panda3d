@@ -814,12 +814,17 @@ dispatch_compute(int num_groups_x, int num_groups_y, int num_groups_z) {
 ////////////////////////////////////////////////////////////////////
 PT(GeomMunger) GraphicsStateGuardian::
 get_geom_munger(const RenderState *state, Thread *current_thread) {
+  // We can cast the RenderState to a non-const object because we are
+  // only updating a cache within the RenderState, not really changing
+  // any of its properties.
+  RenderState *nc_state = ((RenderState *)state);
+
   // Before we even look up the map, see if the _last_mi value points
   // to this GSG.  This is likely because we tend to visit the same
   // state multiple times during a frame.  Also, this might well be
   // the only GSG in the world anyway.
-  if (!state->_mungers.empty()) {
-    RenderState::Mungers::const_iterator mi = state->_last_mi;
+  if (!nc_state->_mungers.empty()) {
+    RenderState::Mungers::const_iterator mi = nc_state->_last_mi;
     if (!(*mi).first.was_deleted() && (*mi).first == this) {
       if ((*mi).second->is_registered()) {
         return (*mi).second;
@@ -828,23 +833,23 @@ get_geom_munger(const RenderState *state, Thread *current_thread) {
   }
 
   // Nope, we have to look it up in the map.
-  RenderState::Mungers::iterator mi = state->_mungers.find(this);
-  if (mi != state->_mungers.end() && !(*mi).first.was_deleted()) {
+  RenderState::Mungers::iterator mi = nc_state->_mungers.find(this);
+  if (mi != nc_state->_mungers.end() && !(*mi).first.was_deleted()) {
     if ((*mi).second->is_registered()) {
-      state->_last_mi = mi;
+      nc_state->_last_mi = mi;
       return (*mi).second;
     }
     // This GeomMunger is no longer registered.  Remove it from the
     // map.
-    state->_mungers.erase(mi);
+    nc_state->_mungers.erase(mi);
   }
 
   // Nothing in the map; create a new entry.
-  PT(GeomMunger) munger = make_geom_munger(state, current_thread);
+  PT(GeomMunger) munger = make_geom_munger(nc_state, current_thread);
   nassertr(munger != (GeomMunger *)NULL && munger->is_registered(), munger);
 
-  mi = state->_mungers.insert(RenderState::Mungers::value_type(this, munger)).first;
-  state->_last_mi = mi;
+  mi = nc_state->_mungers.insert(RenderState::Mungers::value_type(this, munger)).first;
+  nc_state->_last_mi = mi;
 
   return munger;
 }
@@ -1190,26 +1195,14 @@ fetch_specified_part(Shader::ShaderMatInput part, InternalName *name,
     }
     return &t;
   }
-  case Shader::SMO_texmat_i: {
-    const TexMatrixAttrib *tma;
-    const TextureAttrib *ta;
-    if (_target_rs->get_attrib(ta) && _target_rs->get_attrib(tma) &&
-        index < ta->get_num_on_stages()) {
-      return &tma->get_mat(ta->get_on_stage(index));
-    } else {
+  case Shader::SMO_texmat_x: {
+    const TexMatrixAttrib *tma = DCAST(TexMatrixAttrib, _target_rs->get_attrib_def(TexMatrixAttrib::get_class_slot()));
+    const TextureAttrib *ta = DCAST(TextureAttrib, _target_rs->get_attrib_def(TextureAttrib::get_class_slot()));
+    int stagenr = atoi(name->get_name().c_str());
+    if (stagenr >= ta->get_num_on_stages()) {
       return &LMatrix4::ident_mat();
     }
-  }
-  case Shader::SMO_inv_texmat_i: {
-    const TexMatrixAttrib *tma;
-    const TextureAttrib *ta;
-    if (_target_rs->get_attrib(ta) && _target_rs->get_attrib(tma) &&
-        index < ta->get_num_on_stages()) {
-      t = tma->get_transform(ta->get_on_stage(index))->get_inverse()->get_mat();
-      return &t;
-    } else {
-      return &LMatrix4::ident_mat();
-    }
+    return &tma->get_mat(ta->get_on_stage(stagenr));
   }
   case Shader::SMO_plane_x: {
     const NodePath &np = _target_shader->get_shader_input_nodepath(name);
@@ -3343,12 +3336,4 @@ get_driver_shader_version_major() {
 int GraphicsStateGuardian::
 get_driver_shader_version_minor() {
   return -1;
-}
-
-ostream &
-operator << (ostream &out, GraphicsStateGuardian::ShaderModel sm) {
-  static const char *sm_strings[] = {"none", "1.1", "2.0", "2.x", "3.0", "4.0", "5.0", "5.1"};
-  nassertr(sm >= 0 && sm <= GraphicsStateGuardian::SM_51, out);
-  out << sm_strings[sm];
-  return out;
 }

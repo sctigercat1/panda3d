@@ -1,5 +1,3 @@
-__all__ = ["InstalledHostData"]
-
 from panda3d.core import URLSpec
 
 class InstalledHostData:

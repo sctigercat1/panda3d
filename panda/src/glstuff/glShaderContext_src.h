@@ -80,8 +80,6 @@ private:
   GLint _slider_table_index;
   GLsizei _transform_table_size;
   GLsizei _slider_table_size;
-  GLint _frame_number_loc;
-  GLint _frame_number;
   pmap<GLint, GLuint64> _glsl_uniform_handles;
 
   struct ImageInput {
@@ -100,7 +98,7 @@ private:
   void glsl_report_program_errors(GLuint program, bool fatal);
   bool glsl_compile_shader(Shader::ShaderType type);
   bool glsl_compile_and_link();
-  bool parse_and_set_short_hand_shader_vars(Shader::ShaderArgId &arg_id, GLenum param_type, GLint param_size, Shader *s);
+  bool parse_and_set_short_hand_shader_vars(Shader::ShaderArgId &arg_id, Shader *s);
   void release_resources();
 
 public:

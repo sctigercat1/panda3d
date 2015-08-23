@@ -21,6 +21,7 @@
 #include "typedReferenceCount.h"
 #include "pointerTo.h"
 #include "lightMutex.h"
+#include "displayInformation.h"
 
 class GraphicsEngine;
 class GraphicsOutput;
@@ -31,7 +32,6 @@ class FrameBufferProperties;
 class WindowProperties;
 class Texture;
 class WindowHandle;
-class DisplayInformation;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : GraphicsPipe

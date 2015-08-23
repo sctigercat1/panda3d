@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "parameterRemapBasicStringRefToString.h"
-#include "interrogate.h"
 
 ////////////////////////////////////////////////////////////////////
 //     Function: ParameterRemapBasicStringRefToString::Constructor
@@ -24,12 +23,6 @@ ParameterRemapBasicStringRefToString::
 ParameterRemapBasicStringRefToString(CPPType *orig_type) :
   ParameterRemapToString(orig_type)
 {
-  static CPPType *const_char_star_type = (CPPType *)NULL;
-  if (const_char_star_type == (CPPType *)NULL) {
-    const_char_star_type = parser.parse_type("const char *");
-  }
-
-  _new_type = const_char_star_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -41,7 +34,7 @@ ParameterRemapBasicStringRefToString(CPPType *orig_type) :
 ////////////////////////////////////////////////////////////////////
 void ParameterRemapBasicStringRefToString::
 pass_parameter(ostream &out, const string &variable_name) {
-  out << "std::string(" << variable_name << ")";
+  out << variable_name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -65,12 +58,6 @@ ParameterRemapBasicWStringRefToWString::
 ParameterRemapBasicWStringRefToWString(CPPType *orig_type) :
   ParameterRemapToWString(orig_type)
 {
-  static CPPType *const_wchar_star_type = (CPPType *)NULL;
-  if (const_wchar_star_type == (CPPType *)NULL) {
-    const_wchar_star_type = parser.parse_type("const wchar_t *");
-  }
-
-  _new_type = const_wchar_star_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -82,7 +69,7 @@ ParameterRemapBasicWStringRefToWString(CPPType *orig_type) :
 ////////////////////////////////////////////////////////////////////
 void ParameterRemapBasicWStringRefToWString::
 pass_parameter(ostream &out, const string &variable_name) {
-  out << "std::wstring(" << variable_name << ")";
+  out << variable_name;
 }
 
 ////////////////////////////////////////////////////////////////////

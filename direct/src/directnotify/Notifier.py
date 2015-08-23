@@ -6,6 +6,7 @@ from LoggerGlobal import defaultLogger
 from direct.showbase import PythonUtil
 from panda3d.core import ConfigVariableBool, NotifyCategory, StreamWriter, Notify
 import time
+import types
 import sys
 
 class Notifier:

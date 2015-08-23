@@ -57,7 +57,6 @@ typedef double GLdouble;
 // functions are defined, and the system gl.h sometimes doesn't
 // declare these typedefs.
 #if !defined( __EDG__ ) || defined( __INTEL_COMPILER )  // Protect the following from the Tau instrumentor and expose it for the intel compiler.
-typedef const GLubyte * (APIENTRYP PFNGLGETSTRINGIPROC) (GLenum name, GLuint index);
 typedef void (APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,GLvoid *userParam);
 typedef void (APIENTRYP PFNGLDEBUGMESSAGECALLBACKPROC) (GLDEBUGPROC callback, const void *userParam);
 typedef void (APIENTRYP PFNGLDEBUGMESSAGECONTROLPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
@@ -104,7 +103,6 @@ typedef void (APIENTRYP PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC) (GLenum target, GLint 
 typedef void (APIENTRYP PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data);
 typedef void (APIENTRYP PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC) (GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const GLvoid *data);
 typedef void (APIENTRYP PFNGLACTIVESTENCILFACEEXTPROC) (GLenum face);
-typedef void (APIENTRYP PFNGLSECONDARYCOLORPOINTERPROC) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 typedef void (APIENTRYP PFNGLWEIGHTPOINTERARBPROC) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 typedef void (APIENTRYP PFNGLVERTEXBLENDARBPROC) (GLint count);
 typedef void (APIENTRYP PFNGLWEIGHTFVARBPROC) (GLint size, const GLfloat *weights);
@@ -132,15 +130,19 @@ typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURELAYERPROC) (GLenum target, GLenum
 typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 typedef void (APIENTRYP PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC) (GLenum target, GLenum attachment, GLenum pname, GLint *params);
 typedef void (APIENTRYP PFNGLGENERATEMIPMAPEXTPROC) (GLenum target);
+typedef void (APIENTRYP PFNGLCURRENTPALETTEMATRIXARBPROC) (GLint index);
+typedef void (APIENTRYP PFNGLMATRIXINDEXUIVARBPROC) (GLint size, const GLuint *indices);
+typedef void (APIENTRYP PFNGLMATRIXINDEXPOINTERARBPROC) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 typedef void (APIENTRYP PFNGLBLITFRAMEBUFFEREXTPROC) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEMULTISAMPLECOVERAGENVPROC) (GLenum target, GLsizei coverageSamples, GLsizei colorSamples, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRYP PFNGLCURRENTPALETTEMATRIXOESPROC) (GLuint matrixpaletteindex);
+typedef void (APIENTRYP PFNGLLOADPALETTEFROMMODELVIEWMATRIXOESPROC) (void);
+typedef void (APIENTRYP PFNGLMATRIXINDEXPOINTEROESPROC) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+typedef void (APIENTRYP PFNGLWEIGHTPOINTEROESPROC) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 typedef void (APIENTRYP PFNGLTEXSTORAGE1DPROC) (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width);
 typedef void (APIENTRYP PFNGLTEXSTORAGE2DPROC) (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (APIENTRYP PFNGLTEXSTORAGE3DPROC) (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
-typedef void (APIENTRYP PFNGLBINDVERTEXARRAYPROC) (GLuint array);
-typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC) (GLsizei n, const GLuint *arrays);
-typedef void (APIENTRYP PFNGLGENVERTEXARRAYSPROC) (GLsizei n, GLuint *arrays);
 
 #ifndef OPENGLES_1
 // GLSL shader functions
@@ -345,7 +347,7 @@ public:
   virtual bool framebuffer_copy_to_ram
     (Texture *tex, int view, int z, const DisplayRegion *dr, const RenderBuffer &rb);
 
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   void apply_fog(Fog *fog);
 
   virtual void bind_light(PointLight *light_obj, const NodePath &light,
@@ -355,6 +357,8 @@ public:
   virtual void bind_light(Spotlight *light_obj, const NodePath &light,
                           int light_id);
 #endif
+
+  void print_gfx_visual();
 
   LVecBase4 get_light_color(Light *light) const;
 
@@ -388,25 +392,23 @@ protected:
   void do_issue_rescale_normal();
   void do_issue_color_write();
   void do_issue_depth_test();
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   void do_issue_alpha_test();
 #endif
   void do_issue_depth_write();
   void do_issue_cull_face();
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   void do_issue_fog();
 #endif
   void do_issue_depth_offset();
   void do_issue_shade_model();
-#ifndef OPENGLES_1
   void do_issue_shader(bool state_has_changed = false);
-#endif
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   void do_issue_material();
 #endif
   void do_issue_texture();
   void do_issue_blending();
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   void do_issue_tex_gen();
   void do_issue_tex_matrix();
 #endif
@@ -422,11 +424,10 @@ protected:
   static string get_error_string(GLenum error_code);
   string show_gl_string(const string &name, GLenum id);
   virtual void query_gl_version();
-  void query_glsl_version();
   void save_extensions(const char *extensions);
   virtual void get_extra_extensions();
   void report_extensions() const;
-  INLINE virtual bool has_extension(const string &extension) const;
+  INLINE virtual bool has_extension(const string &extension) const FINAL;
   INLINE bool is_at_least_gl_version(int major_version, int minor_version) const;
   INLINE bool is_at_least_gles_version(int major_version, int minor_version) const;
   void *get_extension_func(const char *name);
@@ -434,7 +435,7 @@ protected:
 
   virtual void reissue_transforms();
 
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   virtual void enable_lighting(bool enable);
   virtual void set_ambient_light(const LColor &color);
   virtual void enable_light(int light_id, bool enable);
@@ -469,7 +470,7 @@ protected:
   INLINE void set_color_write_mask(int mask);
   INLINE void clear_color_write_mask();
 
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   INLINE void call_glFogfv(GLenum pname, const LColor &color);
   INLINE void call_glMaterialfv(GLenum face, GLenum pname, const LColor &color);
   INLINE void call_glLightfv(GLenum light, GLenum pname, const LVecBase4 &value);
@@ -480,7 +481,7 @@ protected:
 
   INLINE void call_glTexParameterfv(GLenum target, GLenum pname, const LVecBase4 &value);
 
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   INLINE GLenum get_light_id(int index) const;
   INLINE GLenum get_clip_plane_id(int index) const;
 #endif
@@ -511,19 +512,13 @@ protected:
   static GLenum get_blend_func(ColorBlendAttrib::Operand operand);
   static GLenum get_usage(Geom::UsageHint usage_hint);
 
-#ifndef NDEBUG
-  static const char *get_compressed_format_string(GLenum format);
-#endif
-
   void unbind_buffers();
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
   void disable_standard_vertex_arrays();
   bool update_standard_vertex_arrays(bool force);
   void disable_standard_texture_bindings();
   void update_standard_texture_bindings();
 #endif
-
-  void apply_white_texture();
 
 #ifndef NDEBUG
   void update_show_usage_texture_bindings(int show_stage_index);
@@ -590,6 +585,7 @@ protected:
   RenderModeAttrib::Mode _render_mode;
   PN_stdfloat _point_size;
   bool _point_perspective;
+  bool _vertex_blending_enabled;
   bool _scissor_enabled;
   bool _scissor_attrib_active;
   epvector<LVecBase4i> _scissor_array;
@@ -601,7 +597,8 @@ protected:
   ShaderContext *_vertex_array_shader_context;
   PT(Shader) _texture_binding_shader;
   ShaderContext *_texture_binding_shader_context;
-
+#endif
+#ifdef OPENGLES_2
   static PT(Shader) _default_shader;
 #endif
 
@@ -665,8 +662,21 @@ public:
   bool _explicit_primitive_restart;
 #endif
 
-#if defined(SUPPORT_FIXED_FUNCTION) && !defined(OPENGLES)
-  PFNGLSECONDARYCOLORPOINTERPROC _glSecondaryColorPointer;
+  bool _supports_vertex_blend;
+  PFNGLWEIGHTPOINTERARBPROC _glWeightPointer;
+  PFNGLVERTEXBLENDARBPROC _glVertexBlend;
+  PFNGLWEIGHTFVARBPROC _glWeightfv;
+  PFNGLWEIGHTDVARBPROC _glWeightdv;
+
+  bool _supports_matrix_palette;
+#ifdef OPENGLES_1
+  PFNGLCURRENTPALETTEMATRIXOESPROC _glCurrentPaletteMatrix;
+  PFNGLMATRIXINDEXPOINTEROESPROC _glMatrixIndexPointer;
+#endif
+#ifndef OPENGLES
+  PFNGLCURRENTPALETTEMATRIXARBPROC _glCurrentPaletteMatrix;
+  PFNGLMATRIXINDEXPOINTERARBPROC _glMatrixIndexPointer;
+  PFNGLMATRIXINDEXUIVARBPROC _glMatrixIndexuiv;
 #endif
 
 #ifndef OPENGLES
@@ -702,18 +712,14 @@ public:
   PFNGLGETCOMPRESSEDTEXIMAGEPROC _glGetCompressedTexImage;
 
   bool _supports_bgr;
+  bool _supports_rescale_normal;
   bool _supports_packed_dabc;
   bool _supports_packed_ufloat;
 
-#ifdef SUPPORT_FIXED_FUNCTION
-  bool _supports_rescale_normal;
-#endif
-
   PFNGLACTIVETEXTUREPROC _glActiveTexture;
-#ifdef SUPPORT_FIXED_FUNCTION
+#ifndef OPENGLES_2
+  bool _supports_multitexture;
   PFNGLCLIENTACTIVETEXTUREPROC _glClientActiveTexture;
-#endif
-#ifdef SUPPORT_IMMEDIATE_MODE
   PFNGLMULTITEXCOORD1FPROC _glMultiTexCoord1f;
   PFNGLMULTITEXCOORD2FPROC _glMultiTexCoord2f;
   PFNGLMULTITEXCOORD3FPROC _glMultiTexCoord3f;
@@ -733,12 +739,6 @@ public:
 
   PFNGLBLENDEQUATIONPROC _glBlendEquation;
   PFNGLBLENDCOLORPROC _glBlendColor;
-
-  bool _supports_vao;
-  GLuint _current_vao_index;
-  PFNGLBINDVERTEXARRAYPROC _glBindVertexArray;
-  PFNGLDELETEVERTEXARRAYSPROC _glDeleteVertexArrays;
-  PFNGLGENVERTEXARRAYSPROC _glGenVertexArrays;
 
   bool _supports_framebuffer_object;
   PFNGLISRENDERBUFFEREXTPROC _glIsRenderbuffer;
@@ -907,8 +907,6 @@ public:
 
   bool _use_object_labels;
   PFNGLOBJECTLABELPROC _glObjectLabel;
-
-  GLuint _white_texture;
 
 #ifndef NDEBUG
   bool _show_texture_usage;

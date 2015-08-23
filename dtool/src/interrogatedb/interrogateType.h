@@ -29,7 +29,7 @@ class CPPScope;
 //       Class : InterrogateType
 // Description : An internal representation of a type.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_INTERROGATEDB InterrogateType : public InterrogateComponent {
+class EXPCL_DTOOLCONFIG InterrogateType : public InterrogateComponent {
 public:
   InterrogateType(InterrogateModuleDef *def = NULL);
   InterrogateType(const InterrogateType &copy);

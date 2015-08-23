@@ -118,8 +118,6 @@ public:
   PFNWGLRELEASETEXIMAGEARBPROC _wglReleaseTexImageARB;
   PFNWGLSETPBUFFERATTRIBARBPROC _wglSetPbufferAttribARB;
 
-  PFNWGLCREATECONTEXTATTRIBSARBPROC _wglCreateContextAttribsARB;
-
 public:
   static TypeHandle get_class_type() {
     return _type_handle;

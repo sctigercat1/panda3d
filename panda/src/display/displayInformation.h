@@ -16,32 +16,30 @@
 #define DISPLAYINFORMATION_H
 
 #include "typedef.h"
-#include "graphicsStateGuardian.h"
 
-struct EXPCL_PANDA_DISPLAY DisplayMode {
-PUBLISHED:
+typedef struct {
   int width;
   int height;
   int bits_per_pixel;
   int refresh_rate;
   int fullscreen_only;
-
-  bool operator == (const DisplayMode &other) const;
-  bool operator != (const DisplayMode &other) const;
-  void output(ostream &out) const;
-};
+}
+DisplayMode;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : DisplayInformation
 // Description : This class contains various display information.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_PANDA_DISPLAY DisplayInformation {
-PUBLISHED:
-  enum DetectionState {
-    DS_unknown,
-    DS_success,
 
-    DS_direct_3d_create_error,
+class EXPCL_PANDA_DISPLAY DisplayInformation {
+
+PUBLISHED:
+
+  enum DetectionState {
+    DS_unknown,  
+    DS_success,  
+
+    DS_direct_3d_create_error,  
     DS_create_window_error,
     DS_create_device_error,
   };
@@ -56,17 +54,13 @@ PUBLISHED:
   int get_window_bits_per_pixel();
 
   int get_total_display_modes();
-  const DisplayMode &get_display_mode(int display_index);
-  MAKE_SEQ(get_display_modes, get_total_display_modes, get_display_mode);
-
-  // Older interface for display modes.
   int get_display_mode_width(int display_index);
   int get_display_mode_height(int display_index);
   int get_display_mode_bits_per_pixel(int display_index);
   int get_display_mode_refresh_rate(int display_index);
   int get_display_mode_fullscreen_only(int display_index);
 
-  GraphicsStateGuardian::ShaderModel get_shader_model();
+  int get_shader_model();
   int get_video_memory();
   int get_texture_memory();
 
@@ -127,9 +121,9 @@ public:
   int _maximum_window_width;
   int _maximum_window_height;
   int _window_bits_per_pixel;
-  int _total_display_modes;
+  int _total_display_modes;  
   DisplayMode *_display_mode_array;
-  GraphicsStateGuardian::ShaderModel _shader_model;
+  int _shader_model;
   int _video_memory;
   int _texture_memory;
 

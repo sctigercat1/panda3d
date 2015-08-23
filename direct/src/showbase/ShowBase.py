@@ -24,14 +24,18 @@ from PythonUtil import *
 from direct.showbase import PythonUtil
 #from direct.interval.IntervalManager import ivalMgr
 from direct.interval import IntervalManager
+from InputStateGlobal import inputState
 from direct.showbase.BufferViewer import BufferViewer
 from direct.task import Task
 from direct.directutil import Verify
 from direct.showbase import GarbageReport
-import sys
+import math,sys,os
 import Loader
 import time
+import gc
 import atexit
+from direct.fsm import ClassicFSM
+from direct.fsm import State
 from direct.showbase import ExceptionVarDump
 import DirectObject
 import SfxPlayer
@@ -57,16 +61,15 @@ def exitfunc():
 # *seem* to cause anyone any problems.
 class ShowBase(DirectObject.DirectObject):
 
-    config = get_config_showbase()
     notify = directNotify.newCategory("ShowBase")
 
     def __init__(self, fStartDirect = True, windowType = None):
-        self.__dev__ = self.config.GetBool('want-dev', __debug__)
+        self.__dev__ = config.GetBool('want-dev', __debug__)
         builtins.__dev__ = self.__dev__
 
-        logStackDump = (self.config.GetBool('log-stack-dump', False) or
-                        self.config.GetBool('client-log-stack-dump', False))
-        uploadStackDump = self.config.GetBool('upload-stack-dump', False)
+        logStackDump = (config.GetBool('log-stack-dump', False) or
+                        config.GetBool('client-log-stack-dump', False))
+        uploadStackDump = config.GetBool('upload-stack-dump', False)
         if logStackDump or uploadStackDump:
             ExceptionVarDump.install(logStackDump, uploadStackDump)
 
@@ -81,6 +84,8 @@ class ShowBase(DirectObject.DirectObject):
         #debug running multiplier
         self.debugRunningMultiplier = 4
 
+        # Get the dconfig object
+        self.config = config
         # Setup wantVerifyPdb as soon as reasonable:
         Verify.wantVerifyPdb = self.config.GetBool('want-verify-pdb', 0)
 
@@ -362,7 +367,7 @@ class ShowBase(DirectObject.DirectObject):
         builtins.cpMgr = ConfigPageManager.getGlobalPtr()
         builtins.cvMgr = ConfigVariableManager.getGlobalPtr()
         builtins.pandaSystem = PandaSystem.getGlobalPtr()
-        builtins.wantUberdog = self.config.GetBool('want-uberdog', 1)
+        builtins.wantUberdog = base.config.GetBool('want-uberdog', 1)
         if __debug__:
             builtins.deltaProfiler = DeltaProfiler.DeltaProfiler("ShowBase")
         builtins.onScreenDebug = OnScreenDebug.OnScreenDebug()
@@ -414,7 +419,7 @@ class ShowBase(DirectObject.DirectObject):
         # adds a sleep right after the main render in igloop
         # tends to even out the frame rate and keeps it from going
         # to zero in the out of focus windows
-        if self.config.GetBool('multi-sleep', 0):
+        if base.config.GetBool('multi-sleep', 0):
             self.multiClientSleep = 1
         else:
             self.multiClientSleep = 0
@@ -459,8 +464,8 @@ class ShowBase(DirectObject.DirectObject):
         profile.Profile.bias = float(self.config.GetString("profile-bias","0"))
 
         def f8(x):
-            return ("%" + "8.%df" % self.config.GetInt("profile-decimals", 3)) % x
-        pstats.f8 = f8
+            return ("%"+"8.%df"%base.config.GetInt("profile-decimals",3)) % x
+        pstats.f8=f8
 
     # temp; see ToonBase.py
     def getExitErrorCode(self):
@@ -802,7 +807,7 @@ class ShowBase(DirectObject.DirectObject):
         # Set up a 3-d camera for the window by default.
         if keepCamera:
             self.makeCamera(win, scene = scene, aspectRatio = aspectRatio,
-                            stereo = stereo, useCamera = self.cam)
+                            stereo = stereo, useCamera = base.cam)
         elif makeCamera:
             self.makeCamera(win, scene = scene, aspectRatio = aspectRatio,
                             stereo = stereo)
@@ -827,10 +832,10 @@ class ShowBase(DirectObject.DirectObject):
         for i in range(numRegions):
             dr = win.getDisplayRegion(i)
             # [gjeon] remove drc in base.direct.drList
-            if self.direct is not None:
-                for drc in self.direct.drList:
+            if base.direct is not None:
+                for drc in base.direct.drList:
                     if drc.cam == dr.getCamera():
-                        self.direct.drList.displayRegionList.remove(drc)
+                        base.direct.drList.displayRegionList.remove(drc)
                         break
 
             cam = NodePath(dr.getCamera())
@@ -883,7 +888,7 @@ class ShowBase(DirectObject.DirectObject):
         if not self.winList:
             # Give the window(s) a chance to actually close before we
             # continue.
-            self.graphicsEngine.renderFrame()
+            base.graphicsEngine.renderFrame()
 
     def openDefaultWindow(self, *args, **kw):
         # Creates the main window for the first time, without being
@@ -2116,7 +2121,7 @@ class ShowBase(DirectObject.DirectObject):
         """
         if self.__deadInputs:
             self.eventMgr.doEvents()
-            self.dgTrav.traverse(self.dataRootNode)
+            self.dgTrav.traverse(base.dataRootNode)
             self.eventMgr.eventQueue.clear()
             self.taskMgr.add(self.__dataLoop, 'dataLoop', sort = -50)
             self.__deadInputs = 0
@@ -2177,15 +2182,15 @@ class ShowBase(DirectObject.DirectObject):
             # Clean up the old mode.
             self.showVertices.node().setActive(0)
             dr = self.showVertices.node().getDisplayRegion(0)
-            self.win.removeDisplayRegion(dr)
+            base.win.removeDisplayRegion(dr)
             self.showVertices.removeNode()
             self.showVertices = None
             return
 
-        dr = self.win.makeDisplayRegion()
+        dr = base.win.makeDisplayRegion()
         dr.setSort(1000)
         cam = Camera('showVertices')
-        cam.setLens(self.camLens)
+        cam.setLens(base.camLens)
 
         # Set up a funny state to render only vertices.
         override = 100000
@@ -2376,7 +2381,7 @@ class ShowBase(DirectObject.DirectObject):
 
             # Tell the camera to cull from here instead of its own
             # origin.
-            for c in self.camList:
+            for c in base.camList:
                 c.node().setCullCenter(self.oobeCullFrustum)
             if cam.node().isOfType(Camera):
                 cam.node().setCullCenter(self.oobeCullFrustum)
@@ -2385,7 +2390,7 @@ class ShowBase(DirectObject.DirectObject):
         else:
             # Disable OOBE culling.
 
-            for c in self.camList:
+            for c in base.camList:
                 c.node().setCullCenter(NodePath())
             if cam.node().isOfType(Camera):
                 cam.node().setCullCenter(self.oobeCullFrustum)
@@ -2482,16 +2487,16 @@ class ShowBase(DirectObject.DirectObject):
         """
 
         if source == None:
-            source = self.win
+            source = base.win
 
         if camera == None:
             if hasattr(source, "getCamera"):
                 camera = source.getCamera()
             if camera == None:
-                camera = self.camera
+                camera = base.camera
 
         if sourceLens == None:
-            sourceLens = self.camLens
+            sourceLens = base.camLens
 
         if hasattr(source, "getWindow"):
             source = source.getWindow()
@@ -2508,15 +2513,15 @@ class ShowBase(DirectObject.DirectObject):
 
         # Now render a frame to fill up the texture.
         rig.reparentTo(camera)
-        self.graphicsEngine.openWindows()
-        self.graphicsEngine.renderFrame()
+        base.graphicsEngine.openWindows()
+        base.graphicsEngine.renderFrame()
 
         tex = buffer.getTexture()
         saved = self.screenshot(namePrefix = namePrefix,
                                 defaultFilename = defaultFilename,
                                 source = tex)
 
-        self.graphicsEngine.removeWindow(buffer)
+        base.graphicsEngine.removeWindow(buffer)
         rig.removeNode()
 
         return saved
@@ -2542,16 +2547,16 @@ class ShowBase(DirectObject.DirectObject):
         there is a problem.
         """
         if source == None:
-            source = self.win
+            source = base.win
 
         if camera == None:
             if hasattr(source, "getCamera"):
                 camera = source.getCamera()
             if camera == None:
-                camera = self.camera
+                camera = base.camera
 
         if sourceLens == None:
-            sourceLens = self.camLens
+            sourceLens = base.camLens
 
         if hasattr(source, "getWindow"):
             source = source.getWindow()
@@ -2566,7 +2571,7 @@ class ShowBase(DirectObject.DirectObject):
         rig = NodePath(namePrefix)
         buffer = toSphere.makeCubeMap(namePrefix, size, rig, cameraMask, 0)
         if buffer == None:
-            self.graphicsEngine.removeWindow(toSphere)
+            base.graphicsEngine.removeWindow(toSphere)
             raise StandardError, "Could not make cube map."
 
         # Set the near and far planes from the default lens.
@@ -2595,18 +2600,18 @@ class ShowBase(DirectObject.DirectObject):
         # Now render a frame.  This will render out the cube map and
         # then apply it to the the card in the toSphere buffer.
         rig.reparentTo(camera)
-        self.graphicsEngine.openWindows()
-        self.graphicsEngine.renderFrame()
+        base.graphicsEngine.openWindows()
+        base.graphicsEngine.renderFrame()
 
         # One more frame for luck.
-        self.graphicsEngine.renderFrame()
+        base.graphicsEngine.renderFrame()
 
         saved = self.screenshot(namePrefix = namePrefix,
                                 defaultFilename = defaultFilename,
                                 source = toSphere.getTexture())
 
-        self.graphicsEngine.removeWindow(buffer)
-        self.graphicsEngine.removeWindow(toSphere)
+        base.graphicsEngine.removeWindow(buffer)
+        base.graphicsEngine.removeWindow(toSphere)
         rig.removeNode()
 
         return saved
@@ -2827,11 +2832,11 @@ class ShowBase(DirectObject.DirectObject):
             def wxLoop(task):
                 # First we need to ensure that the OS message queue is
                 # processed.
-                self.wxApp.Yield()
+                base.wxApp.Yield()
 
                 # Now do all the wxPython events waiting on this frame.
-                while self.wxApp.Pending():
-                    self.wxApp.Dispatch()
+                while base.wxApp.Pending():
+                    base.wxApp.Dispatch()
 
                 return task.again
 
@@ -2938,10 +2943,8 @@ class ShowBase(DirectObject.DirectObject):
         self.startWx(fWantWx)
         self.wantDirect = fWantDirect
         if self.wantDirect:
-            from direct.directtools.DirectSession import DirectSession
-            self.direct = DirectSession()
-            self.direct.enable()
-            builtins.direct = self.direct
+            from direct.directtools import DirectSession
+            base.direct.enable()
         else:
             builtins.direct = self.direct = None
 

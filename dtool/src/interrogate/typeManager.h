@@ -67,7 +67,6 @@ public:
   static bool is_pointable(CPPType *type);
   static bool is_char(CPPType *type);
   static bool is_unsigned_char(CPPType *type);
-  static bool is_signed_char(CPPType *type);
   static bool is_char_pointer(CPPType *type);
   static bool is_const_char_pointer(CPPType *type);
   static bool is_unsigned_char_pointer(CPPType *type);

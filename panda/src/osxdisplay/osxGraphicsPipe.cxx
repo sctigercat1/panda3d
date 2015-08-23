@@ -17,7 +17,6 @@
 #include "pnmImage.h"
 #include "subprocessWindow.h"
 #include "nativeWindowHandle.h"
-#include "displayInformation.h"
 #import <Carbon/Carbon.h>
 
 // some macros to make code more readable.

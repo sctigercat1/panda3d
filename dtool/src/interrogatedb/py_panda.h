@@ -114,7 +114,6 @@ inline PyObject* doPy_RETURN_FALSE()
 #define PyLongOrInt_FromSize_t PyLong_FromSize_t
 #define PyLongOrInt_FromLong PyLong_FromLong
 #define PyLongOrInt_FromUnsignedLong PyLong_FromUnsignedLong
-#define PyLongOrInt_AS_LONG PyLong_AS_LONG
 #define PyInt_Check PyLong_Check
 #define PyInt_AsLong PyLong_AsLong
 #define PyInt_AS_LONG PyLong_AS_LONG
@@ -123,7 +122,6 @@ inline PyObject* doPy_RETURN_FALSE()
 // PyInt_FromSize_t automatically picks the right type.
 #define PyLongOrInt_FromSize_t PyInt_FromSize_t
 #define PyLongOrInt_FromLong PyInt_FromLong
-#define PyLongOrInt_AS_LONG PyInt_AsLong
 
 // For more portably defining hash functions.
 typedef long Py_hash_t;
@@ -189,7 +187,7 @@ struct Dtool_PyInstDef {
 ////////////////////////////////////////////////////////////////////////
 // A Offset Dictionary Defining How to read the Above Object..
 ////////////////////////////////////////////////////////////////////////
-extern EXPCL_INTERROGATEDB PyMemberDef standard_type_members[];
+extern EXPCL_DTOOLCONFIG PyMemberDef standard_type_members[];
 
 ////////////////////////////////////////////////////////////////////////
 // The Class Definition Structor For a Dtool python type.
@@ -283,7 +281,7 @@ static void Dtool_FreeInstance_##CLASS_NAME(PyObject *self) {\
 ////////////////////////////////////////////////////////////////////////
 /// Simple Recognition Functions..
 ////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB bool DtoolCanThisBeAPandaInstance(PyObject *self);
+EXPCL_DTOOLCONFIG bool DtoolCanThisBeAPandaInstance(PyObject *self);
 
 ///////////////////////////////////////////////////////////////////////////////
 //  ** HACK ** allert..
@@ -293,15 +291,15 @@ EXPCL_INTERROGATEDB bool DtoolCanThisBeAPandaInstance(PyObject *self);
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-EXPCL_INTERROGATEDB void RegisterNamedClass(const string &name, Dtool_PyTypedObject &otype);
-EXPCL_INTERROGATEDB void RegisterRuntimeTypedClass(Dtool_PyTypedObject &otype);
+EXPCL_DTOOLCONFIG void RegisterNamedClass(const string &name, Dtool_PyTypedObject &otype);
+EXPCL_DTOOLCONFIG void RegisterRuntimeTypedClass(Dtool_PyTypedObject &otype);
 
-EXPCL_INTERROGATEDB Dtool_PyTypedObject *LookupNamedClass(const string &name);
-EXPCL_INTERROGATEDB Dtool_PyTypedObject *LookupRuntimeTypedClass(TypeHandle handle);
+EXPCL_DTOOLCONFIG Dtool_PyTypedObject *LookupNamedClass(const string &name);
+EXPCL_DTOOLCONFIG Dtool_PyTypedObject *LookupRuntimeTypedClass(TypeHandle handle);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB Dtool_PyTypedObject *Dtool_RuntimeTypeDtoolType(int type);
+EXPCL_DTOOLCONFIG Dtool_PyTypedObject *Dtool_RuntimeTypeDtoolType(int type);
 
 ////////////////////////////////////////////////////////////////////////
 //  Function : DTOOL_Call_ExtractThisPointerForType
@@ -311,15 +309,15 @@ EXPCL_INTERROGATEDB Dtool_PyTypedObject *Dtool_RuntimeTypeDtoolType(int type);
 //      with these as the generated code depends on how this is set
 //      up..
 ////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB void DTOOL_Call_ExtractThisPointerForType(PyObject *self, Dtool_PyTypedObject *classdef, void **answer);
+EXPCL_DTOOLCONFIG void DTOOL_Call_ExtractThisPointerForType(PyObject *self, Dtool_PyTypedObject *classdef, void **answer);
 
-EXPCL_INTERROGATEDB void *DTOOL_Call_GetPointerThisClass(PyObject *self, Dtool_PyTypedObject *classdef, int param, const string &function_name, bool const_ok, bool report_errors);
+EXPCL_DTOOLCONFIG void *DTOOL_Call_GetPointerThisClass(PyObject *self, Dtool_PyTypedObject *classdef, int param, const string &function_name, bool const_ok, bool report_errors);
 
-EXPCL_INTERROGATEDB void *DTOOL_Call_GetPointerThis(PyObject *self);
+EXPCL_DTOOLCONFIG void *DTOOL_Call_GetPointerThis(PyObject *self);
 
-EXPCL_INTERROGATEDB bool Dtool_Call_ExtractThisPointer(PyObject *self, Dtool_PyTypedObject &classdef, void **answer);
+EXPCL_DTOOLCONFIG bool Dtool_Call_ExtractThisPointer(PyObject *self, Dtool_PyTypedObject &classdef, void **answer);
 
-EXPCL_INTERROGATEDB bool Dtool_Call_ExtractThisPointer_NonConst(PyObject *self, Dtool_PyTypedObject &classdef,
+EXPCL_DTOOLCONFIG bool Dtool_Call_ExtractThisPointer_NonConst(PyObject *self, Dtool_PyTypedObject &classdef,
                                                               void **answer, const char *method_name);
 
 template<class T> INLINE bool DTOOL_Call_ExtractThisPointer(PyObject *self, T *&into) {
@@ -340,15 +338,15 @@ template<class T> INLINE bool DTOOL_Call_ExtractThisPointer(PyObject *self, T *&
 // _PyErr_OCCURRED is an undocumented inline version of PyErr_Occurred.
 #define Dtool_CheckErrorOccurred() (_PyErr_OCCURRED() != NULL)
 #else
-EXPCL_INTERROGATEDB bool Dtool_CheckErrorOccurred();
+EXPCL_DTOOLCONFIG bool Dtool_CheckErrorOccurred();
 #endif
 
-EXPCL_INTERROGATEDB PyObject *Dtool_Raise_AssertionError();
-EXPCL_INTERROGATEDB PyObject *Dtool_Raise_TypeError(const char *message);
-EXPCL_INTERROGATEDB PyObject *Dtool_Raise_ArgTypeError(PyObject *obj, int param, const char *function_name, const char *type_name);
-EXPCL_INTERROGATEDB PyObject *Dtool_Raise_AttributeError(PyObject *obj, const char *attribute);
+EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_AssertionError();
+EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_TypeError(const char *message);
+EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_ArgTypeError(PyObject *obj, int param, const char *function_name, const char *type_name);
+EXPCL_DTOOLCONFIG PyObject *Dtool_Raise_AttributeError(PyObject *obj, const char *attribute);
 
-EXPCL_INTERROGATEDB PyObject *_Dtool_Raise_BadArgumentsError();
+EXPCL_DTOOLCONFIG PyObject *_Dtool_Raise_BadArgumentsError();
 #ifdef NDEBUG
 // Define it to a function that just prints a generic message.
 #define Dtool_Raise_BadArgumentsError(x) _Dtool_Raise_BadArgumentsError()
@@ -357,9 +355,9 @@ EXPCL_INTERROGATEDB PyObject *_Dtool_Raise_BadArgumentsError();
 #define Dtool_Raise_BadArgumentsError(x) Dtool_Raise_TypeError("Arguments must match:\n" x)
 #endif
 
-EXPCL_INTERROGATEDB PyObject *_Dtool_Return_None();
-EXPCL_INTERROGATEDB PyObject *Dtool_Return_Bool(bool value);
-EXPCL_INTERROGATEDB PyObject *_Dtool_Return(PyObject *value);
+EXPCL_DTOOLCONFIG PyObject *_Dtool_Return_None();
+EXPCL_DTOOLCONFIG PyObject *Dtool_Return_Bool(bool value);
+EXPCL_DTOOLCONFIG PyObject *_Dtool_Return(PyObject *value);
 
 #ifdef NDEBUG
 #define Dtool_Return_None() (_PyErr_OCCURRED() != NULL ? NULL : (Py_INCREF(Py_None), Py_None))
@@ -375,13 +373,13 @@ EXPCL_INTERROGATEDB PyObject *_Dtool_Return(PyObject *value);
 // this function relies on the behavior of typed objects in the panda system.
 //
 ////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB PyObject *DTool_CreatePyInstanceTyped(void *local_this_in, Dtool_PyTypedObject &known_class_type, bool memory_rules, bool is_const, int RunTimeType);
+EXPCL_DTOOLCONFIG PyObject *DTool_CreatePyInstanceTyped(void *local_this_in, Dtool_PyTypedObject &known_class_type, bool memory_rules, bool is_const, int RunTimeType);
 
 ////////////////////////////////////////////////////////////////////////
 // DTool_CreatePyInstance .. wrapper function to finalize the existance of a general
 //    dtool py instance..
 ////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB PyObject *DTool_CreatePyInstance(void *local_this, Dtool_PyTypedObject &in_classdef, bool memory_rules, bool is_const);
+EXPCL_DTOOLCONFIG PyObject *DTool_CreatePyInstance(void *local_this, Dtool_PyTypedObject &in_classdef, bool memory_rules, bool is_const);
 
 // These template methods allow use when the Dtool_PyTypedObject is not known.
 // They require a get_class_type() to be defined for the class.
@@ -452,7 +450,7 @@ Define_Dtool_Class(MODULE_NAME,CLASS_NAME,PUBLIC_NAME)
 ///////////////////////////////////////////////////////////////////////////////
 /// Th Finalizer for simple instances..
 ///////////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB int DTool_PyInit_Finalize(PyObject *self, void *This, Dtool_PyTypedObject *type, bool memory_rules, bool is_const);
+EXPCL_DTOOLCONFIG int DTool_PyInit_Finalize(PyObject *self, void *This, Dtool_PyTypedObject *type, bool memory_rules, bool is_const);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// A heler function to glu methed definition together .. that can not be done at
@@ -461,7 +459,7 @@ EXPCL_INTERROGATEDB int DTool_PyInit_Finalize(PyObject *self, void *This, Dtool_
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::map<std::string, PyMethodDef *> MethodDefmap;
 
-EXPCL_INTERROGATEDB void Dtool_Accum_MethDefs(PyMethodDef in[], MethodDefmap &themap);
+EXPCL_DTOOLCONFIG void Dtool_Accum_MethDefs(PyMethodDef in[], MethodDefmap &themap);
 
 ///////////////////////////////////////////////////////////////////////////////
 //// We need a way to runtime merge compile units into a python "Module" .. this is done with the
@@ -473,9 +471,9 @@ struct LibraryDef {
 ///////////////////////////////////////////////////////////////////////////////
 
 #if PY_MAJOR_VERSION >= 3
-EXPCL_INTERROGATEDB PyObject *Dtool_PyModuleInitHelper(LibraryDef *defs[], PyModuleDef *module_def);
+EXPCL_DTOOLCONFIG PyObject *Dtool_PyModuleInitHelper(LibraryDef *defs[], PyModuleDef *module_def);
 #else
-EXPCL_INTERROGATEDB PyObject *Dtool_PyModuleInitHelper(LibraryDef *defs[], const char *modulename);
+EXPCL_DTOOLCONFIG PyObject *Dtool_PyModuleInitHelper(LibraryDef *defs[], const char *modulename);
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -486,16 +484,16 @@ EXPCL_INTERROGATEDB PyObject *Dtool_PyModuleInitHelper(LibraryDef *defs[], const
 //      Required to support fom historical inharatence in the for of "is this instance of"..
 //
 ///////////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB PyObject *Dtool_BorrowThisReference(PyObject *self, PyObject *args);
+EXPCL_DTOOLCONFIG PyObject *Dtool_BorrowThisReference(PyObject *self, PyObject *args);
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // We do expose a dictionay for dtool classes .. this should be removed at some point..
 //////////////////////////////////////////////////////////////////////////////////////////////
-EXPCL_INTERROGATEDB PyObject *Dtool_AddToDictionary(PyObject *self1, PyObject *args);
+EXPCL_DTOOLCONFIG PyObject *Dtool_AddToDictionary(PyObject *self1, PyObject *args);
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-EXPCL_INTERROGATEDB Py_hash_t DTOOL_PyObject_HashPointer(PyObject *obj);
+EXPCL_DTOOLCONFIG Py_hash_t DTOOL_PyObject_HashPointer(PyObject *obj);
 
 /* Compare v to w.  Return
    -1 if v <  w or exception (PyErr_Occurred() true in latter case).
@@ -505,28 +503,28 @@ EXPCL_INTERROGATEDB Py_hash_t DTOOL_PyObject_HashPointer(PyObject *obj);
    XXX of error.
 */
 
-EXPCL_INTERROGATEDB int DTOOL_PyObject_ComparePointers(PyObject *v1, PyObject *v2);
-EXPCL_INTERROGATEDB int DTOOL_PyObject_Compare(PyObject *v1, PyObject *v2);
+EXPCL_DTOOLCONFIG int DTOOL_PyObject_ComparePointers(PyObject *v1, PyObject *v2);
+EXPCL_DTOOLCONFIG int DTOOL_PyObject_Compare(PyObject *v1, PyObject *v2);
 
-EXPCL_INTERROGATEDB PyObject *DTOOL_PyObject_RichCompare(PyObject *v1, PyObject *v2, int op);
+EXPCL_DTOOLCONFIG PyObject *DTOOL_PyObject_RichCompare(PyObject *v1, PyObject *v2, int op);
 
-EXPCL_INTERROGATEDB PyObject *
+EXPCL_DTOOLCONFIG PyObject *
 copy_from_make_copy(PyObject *self, PyObject *noargs);
 
-EXPCL_INTERROGATEDB PyObject *
+EXPCL_DTOOLCONFIG PyObject *
 copy_from_copy_constructor(PyObject *self, PyObject *noargs);
 
-EXPCL_INTERROGATEDB PyObject *
+EXPCL_DTOOLCONFIG PyObject *
 map_deepcopy_to_copy(PyObject *self, PyObject *args);
 
 #if PY_MAJOR_VERSION < 3
 // In the Python 3 case, it is defined as a macro, at the beginning of this file.
-EXPCL_INTERROGATEDB PyObject *
+EXPCL_DTOOLCONFIG PyObject *
 PyLongOrInt_FromUnsignedLong(unsigned long value);
 #endif
 
-EXPCL_INTERROGATEDB extern struct Dtool_PyTypedObject Dtool_DTOOL_SUPER_BASE;
-EXPCL_INTERROGATEDB extern void Dtool_PyModuleClassInit_DTOOL_SUPER_BASE(PyObject *module);
+EXPCL_DTOOLCONFIG extern struct Dtool_PyTypedObject Dtool_DTOOL_SUPER_BASE;
+EXPCL_DTOOLCONFIG extern void Dtool_PyModuleClassInit_DTOOL_SUPER_BASE(PyObject *module);
 
 #define Dtool_Ptr_DTOOL_SUPER_BASE (&Dtool_DTOOL_SUPER_BASE)
 

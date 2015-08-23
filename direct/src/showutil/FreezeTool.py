@@ -16,6 +16,7 @@ try:
 except ImportError:
     p3extend_frozen = None
 
+import direct
 from panda3d.core import *
 from pandac.extension_native_helpers import dll_suffix, dll_ext
 
