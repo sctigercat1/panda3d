@@ -1264,9 +1264,15 @@ write_sub_module(ostream &out, Object *obj) {
   std::string export_class_name = classNameFromCppName(obj->_itype.get_name(), false);
   std::string export_class_name2 = classNameFromCppName(obj->_itype.get_name(), true);
 
-//  out << "  Py_INCREF(&Dtool_" << class_name << ".As_PyTypeObject());\n";
+  // Note: PyModule_AddObject steals a reference, so we have to call Py_INCREF
+  // for every but the first time we add it to the module.
+  if (obj->_itype.is_typedef()) {
+    out << "  Py_INCREF((PyObject *)&Dtool_" << class_name << ");\n";
+  }
+
   out << "  PyModule_AddObject(module, \"" << export_class_name << "\", (PyObject *)&Dtool_" << class_name << ");\n";
   if (export_class_name != export_class_name2) {
+    out << "  Py_INCREF((PyObject *)&Dtool_" << class_name << ");\n";
     out << "  PyModule_AddObject(module, \"" << export_class_name2 << "\", (PyObject *)&Dtool_" << class_name << ");\n";
   }
 }
@@ -4742,8 +4748,7 @@ write_function_instance(ostream &out, FunctionRemap *remap,
           << "PyUnicode_AsWideChar(" << param_name << ", " << param_name << "_str, " << param_name << "_len);\n"
           << "#endif\n";
 
-        pexpr_string = "std::wstring(" +
-          param_name + "_str, " + param_name + "_len)";
+        pexpr_string = param_name + "_str, " + param_name + "_len";
 
         extra_cleanup
           << "#if PY_VERSION_HEX >= 0x03030000\n"
@@ -4768,8 +4773,7 @@ write_function_instance(ostream &out, FunctionRemap *remap,
           << "PyUnicode_AsWideChar(" << param_name << ", " << param_name << "_str, " << param_name << "_len);\n"
           << "#endif\n";
 
-        pexpr_string = "&std::wstring(" +
-          param_name + "_str, " + param_name + "_len)";
+        pexpr_string = param_name + "_str, " + param_name + "_len";
 
         extra_cleanup
           << "#if PY_VERSION_HEX >= 0x03030000\n"
@@ -4816,13 +4820,12 @@ write_function_instance(ostream &out, FunctionRemap *remap,
             + "_str, &" + param_name + "_len";
         }
 
-        if (TypeManager::is_const_ptr_to_basic_string_char(orig_type)) {
-          pexpr_string = "&std::string(" +
-            param_name + "_str, " + param_name + "_len)";
-        } else {
-          pexpr_string = "std::string(" +
-            param_name + "_str, " + param_name + "_len)";
-        }
+//        if (TypeManager::is_const_ptr_to_basic_string_char(orig_type)) {
+//          pexpr_string = "&std::string(" +
+//            param_name + "_str, " + param_name + "_len)";
+//        } else {
+          pexpr_string = param_name + "_str, " + param_name + "_len";
+//        }
         expected_params += "str";
       }
       // Remember to clear the TypeError that any of the above methods raise.
@@ -4926,12 +4929,13 @@ write_function_instance(ostream &out, FunctionRemap *remap,
       expected_params += "long";
       only_pyobjects = false;
 
-    } else if (TypeManager::is_unsigned_short(type)) {
+    } else if (TypeManager::is_unsigned_short(type) ||
+               TypeManager::is_unsigned_char(type) || TypeManager::is_signed_char(type)) {
+
       if (args_type == AT_single_arg) {
-        // This is defined to PyLong_Check for Python 3 by py_panda.h.
-        type_check = "PyInt_Check(arg)";
+        type_check = "PyLongOrInt_Check(arg)";
         extra_convert
-          << "long " << param_name << " = PyInt_AS_LONG(arg);\n";
+          << "long " << param_name << " = PyLongOrInt_AS_LONG(arg);\n";
 
         pexpr_string = "(" + type->get_local_name(&parser) + ")" + param_name;
       } else {
@@ -4943,12 +4947,25 @@ write_function_instance(ostream &out, FunctionRemap *remap,
       // The "H" format code, unlike "h", does not do overflow checking, so
       // we have to do it ourselves (except in release builds).
       extra_convert
-        << "#ifndef NDEBUG\n"
-        << "if (" << param_name << " < 0 || " << param_name << " > USHRT_MAX) {\n";
+        << "#ifndef NDEBUG\n";
 
-      error_raise_return(extra_convert, 2, return_flags, "OverflowError",
-                         "value %ld out of range for unsigned short integer",
-                         param_name);
+      if (TypeManager::is_unsigned_short(type)) {
+        extra_convert << "if (" << param_name << " < 0 || " << param_name << " > USHRT_MAX) {\n";
+        error_raise_return(extra_convert, 2, return_flags, "OverflowError",
+                           "value %ld out of range for unsigned short integer",
+                           param_name);
+      } else if (TypeManager::is_unsigned_char(type)) {
+        extra_convert << "if (" << param_name << " < 0 || " << param_name << " > UCHAR_MAX) {\n";
+        error_raise_return(extra_convert, 2, return_flags, "OverflowError",
+                           "value %ld out of range for unsigned byte",
+                           param_name);
+      } else {
+        extra_convert << "if (" << param_name << " < CHAR_MIN || " << param_name << " > CHAR_MAX) {\n";
+        error_raise_return(extra_convert, 2, return_flags, "OverflowError",
+                           "value %ld out of range for signed byte",
+                           param_name);
+      }
+
       extra_convert
         << "}\n"
         << "#endif\n";
@@ -4958,12 +4975,11 @@ write_function_instance(ostream &out, FunctionRemap *remap,
 
     } else if (TypeManager::is_short(type)) {
       if (args_type == AT_single_arg) {
-        // This is defined to PyLong_Check for Python 3 by py_panda.h.
-        type_check = "PyInt_Check(arg)";
+        type_check = "PyLongOrInt_Check(arg)";
 
         // Perform overflow checking in debug builds.
         extra_convert
-          << "long arg_val = PyInt_AS_LONG(arg);\n"
+          << "long arg_val = PyLongOrInt_AS_LONG(arg);\n"
           << "#ifndef NDEBUG\n"
           << "if (arg_val < SHRT_MIN || arg_val > SHRT_MAX) {\n";
 
@@ -5021,14 +5037,13 @@ write_function_instance(ostream &out, FunctionRemap *remap,
 
     } else if (TypeManager::is_integer(type)) {
       if (args_type == AT_single_arg) {
-        // This is defined to PyLong_Check for Python 3 by py_panda.h.
-        type_check = "PyInt_Check(arg)";
+        type_check = "PyLongOrInt_Check(arg)";
 
         // Perform overflow checking in debug builds.  Note that Python 2
         // stores longs internally, for ints, so we don't do it on Windows,
         // where longs are the same size as ints.
         extra_convert
-          << "long arg_val = PyInt_AS_LONG(arg);\n"
+          << "long arg_val = PyLongOrInt_AS_LONG(arg);\n"
           << "#if (SIZEOF_LONG > SIZEOF_INT) && !defined(NDEBUG)\n"
           << "if (arg_val < INT_MIN || arg_val > INT_MAX) {\n";
 
@@ -6313,7 +6328,7 @@ write_make_seq(ostream &out, Object *obj, const std::string &ClassName,
       << "    return NULL;\n"
       << "  }\n"
       << "\n"
-      << "  PyObject *getter = PyObject_GetAttrString(self, \"" << element_name << "\");\n"
+      << "  PyObject *getter = PyDict_GetItemString(Dtool_" << ClassName << "._PyType.tp_dict, \"" << element_name << "\");\n"
       << "  if (getter == (PyObject *)NULL) {\n"
       << "    return NULL;\n"
       << "  }\n"
@@ -6327,7 +6342,7 @@ write_make_seq(ostream &out, Object *obj, const std::string &ClassName,
       << "#else\n"
       << "    PyObject *index = PyInt_FromSsize_t(i);\n"
       << "#endif\n"
-      << "    PyObject *value = PyObject_CallFunctionObjArgs(getter, index, NULL);\n"
+      << "    PyObject *value = PyObject_CallFunctionObjArgs(getter, self, index, NULL);\n"
       << "    PyTuple_SET_ITEM(tuple, i, value);\n"
       << "    Py_DECREF(index);\n"
       << "  }\n"

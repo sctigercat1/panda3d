@@ -1,40 +1,3 @@
-from extension_native_helpers import *
-from panda3d.core import *
-
-"""
-StreamReader_extensions module: contains methods to extend functionality
-of the StreamReader class
-"""
-
-def readlines(self):
-    """Reads all the lines at once and returns a list."""
-    lines = []
-    line = self.readline()
-    while line:
-        lines.append(line)
-        line = self.readline()
-    return lines
-    
-Dtool_funcToMethod(readlines, StreamReader)        
-del readlines
-
-"""
-Ramfile_extensions module: contains methods to extend functionality
-of the Ramfile class
-"""
-
-def readlines(self):
-    """Reads all the lines at once and returns a list."""
-    lines = []
-    line = self.readline()
-    while line:
-        lines.append(line)
-        line = self.readline()
-    return lines
-
-Dtool_funcToMethod(readlines, Ramfile)
-del readlines    
-
 ####################################################################
 #Dtool_funcToMethod(func, class)        
 #del func
@@ -55,7 +18,7 @@ def spawnTask(self, name = None, callback = None, extraArgs = []):
         Returns the newly-spawned task.
         """
         if not name:
-            name = self.getUrl().cStr()
+            name = str(self.getUrl())
         from direct.task import Task
         task = Task.Task(self.doTask)
         task.callback = callback
@@ -76,4 +39,3 @@ def doTask(self, task):
 Dtool_funcToMethod(doTask, HTTPChannel)        
 del doTask
 #####################################################################
-

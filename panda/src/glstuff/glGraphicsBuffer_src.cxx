@@ -1054,7 +1054,7 @@ attach_tex(int layer, int view, Texture *attach, GLenum attachpoint) {
   // to a framebuffer attachment.
   glgsg->apply_texture(gtc);
 
-#ifndef OPENGLES
+#if !defined(OPENGLES) && defined(SUPPORT_FIXED_FUNCTION)
   GLclampf priority = 1.0f;
   glPrioritizeTextures(1, &gtc->_index, &priority);
 #endif
@@ -1062,6 +1062,7 @@ attach_tex(int layer, int view, Texture *attach, GLenum attachpoint) {
 #ifndef OPENGLES
   if (_rb_size_z != 1) {
     // Bind all of the layers of the texture.
+    nassertv(glgsg->_glFramebufferTexture != NULL);
     glgsg->_glFramebufferTexture(GL_FRAMEBUFFER_EXT, attachpoint,
                                  gtc->_index, 0);
     return;

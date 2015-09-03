@@ -51,59 +51,51 @@ TypeHandle CLP(ShaderContext)::_type_handle;
 //               actually picked up and the appropriate ShaderMatSpec pushed onto _mat_spec.
 ////////////////////////////////////////////////////////////////////
 bool CLP(ShaderContext)::
-parse_and_set_short_hand_shader_vars(Shader::ShaderArgId &arg_id, Shader *objShader) {
+parse_and_set_short_hand_shader_vars(Shader::ShaderArgId &arg_id, GLenum param_type, GLint param_size, Shader *objShader) {
   Shader::ShaderArgInfo p;
   p._id = arg_id;
   p._cat = GLCAT;
 
   string basename(arg_id._name);
+
   // Split it at the underscores.
   vector_string pieces;
   tokenize(basename, pieces, "_");
 
-  if (pieces[0] == "mstrans") {
-    pieces[0] = "trans";
-    pieces.push_back("to");
-    pieces.push_back("model");
-  }
-  if (pieces[0] == "wstrans") {
-    pieces[0] = "trans";
-    pieces.push_back("to");
-    pieces.push_back("world");
-  }
-  if (pieces[0] == "vstrans") {
-    pieces[0] = "trans";
-    pieces.push_back("to");
-    pieces.push_back("view");
-  }
-  if (pieces[0] == "cstrans") {
-    pieces[0] = "trans";
-    pieces.push_back("to");
-    pieces.push_back("clip");
-  }
-  if (pieces[0] == "mspos") {
-    pieces[0] = "row3";
-    pieces.push_back("to");
-    pieces.push_back("model");
-  }
-  if (pieces[0] == "wspos") {
-    pieces[0] = "row3";
-    pieces.push_back("to");
-    pieces.push_back("world");
-  }
-  if (pieces[0] == "vspos") {
-    pieces[0] = "row3";
-    pieces.push_back("to");
-    pieces.push_back("view");
-  }
-  if (pieces[0] == "cspos") {
-    pieces[0] = "row3";
-    pieces.push_back("to");
-    pieces.push_back("clip");
+  if (pieces.size() == 0 || pieces[0].size() < 3) {
+    return false;
   }
 
-  if ((pieces[0] == "mat") || (pieces[0] == "inv") ||
-      (pieces[0] == "tps") || (pieces[0] == "itp")) {
+  // mstrans, wstrans, vstrans, cstrans, mspos, wspos, vspos, cspos
+  if (strcmp(pieces[0].c_str() + 1, "strans") == 0 ||
+      strcmp(pieces[0].c_str() + 1, "spos") == 0) {
+    pieces.push_back("to");
+
+    switch (pieces[0][0]) {
+    case 'm':
+      pieces.push_back("model");
+      break;
+    case 'w':
+      pieces.push_back("world");
+      break;
+    case 'v':
+      pieces.push_back("view");
+      break;
+    case 'c':
+      pieces.push_back("clip");
+      break;
+    default:
+      return false;
+    }
+    if (strcmp(pieces[0].c_str() + 1, "strans") == 0) {
+      pieces[0] = "trans";
+    } else {
+      pieces[0] = "row3";
+    }
+  // mat_modelproj et al
+  } else if (pieces[0].size() == 3 &&
+             (pieces[0] == "mat" || pieces[0] == "inv" ||
+              pieces[0] == "tps" || pieces[0] == "itp")) {
     if (!objShader->cp_errchk_parameter_words(p, 2)) {
       return false;
     }
@@ -156,16 +148,58 @@ parse_and_set_short_hand_shader_vars(Shader::ShaderArgId &arg_id, Shader *objSha
     pieces.push_back("");
 
     // Decide whether this is a matrix or vector.
-    if      (pieces[0] == "trans") bind._piece = Shader::SMP_whole;
-    else if (pieces[0] == "tpose") bind._piece = Shader::SMP_transpose;
-    else if (pieces[0] == "row0")  bind._piece = Shader::SMP_row0;
-    else if (pieces[0] == "row1")  bind._piece = Shader::SMP_row1;
-    else if (pieces[0] == "row2")  bind._piece = Shader::SMP_row2;
-    else if (pieces[0] == "row3")  bind._piece = Shader::SMP_row3;
-    else if (pieces[0] == "col0")  bind._piece = Shader::SMP_col0;
-    else if (pieces[0] == "col1")  bind._piece = Shader::SMP_col1;
-    else if (pieces[0] == "col2")  bind._piece = Shader::SMP_col2;
-    else if (pieces[0] == "col3")  bind._piece = Shader::SMP_col3;
+    if (param_type == GL_FLOAT_MAT4) {
+      if      (pieces[0] == "trans") bind._piece = Shader::SMP_whole;
+      else if (pieces[0] == "tpose") bind._piece = Shader::SMP_transpose;
+      else {
+        GLCAT.error() << basename << " should be vec4, not mat3\n";
+        return false;
+      }
+    } else if (param_type == GL_FLOAT_MAT3) {
+      if      (pieces[0] == "trans") bind._piece = Shader::SMP_upper3x3;
+      else if (pieces[0] == "tpose") bind._piece = Shader::SMP_transpose3x3;
+      else {
+        GLCAT.error() << basename << " should be vec4, not mat3\n";
+        return false;
+      }
+    } else if (param_type == GL_FLOAT_VEC4) {
+      if      (pieces[0] == "trans") bind._piece = Shader::SMP_col0;
+      else if (pieces[0] == "tpose") bind._piece = Shader::SMP_row0;
+      else if (pieces[0] == "row0")  bind._piece = Shader::SMP_row0;
+      else if (pieces[0] == "row1")  bind._piece = Shader::SMP_row1;
+      else if (pieces[0] == "row2")  bind._piece = Shader::SMP_row2;
+      else if (pieces[0] == "row3")  bind._piece = Shader::SMP_row3;
+      else if (pieces[0] == "col0")  bind._piece = Shader::SMP_col0;
+      else if (pieces[0] == "col1")  bind._piece = Shader::SMP_col1;
+      else if (pieces[0] == "col2")  bind._piece = Shader::SMP_col2;
+      else if (pieces[0] == "col3")  bind._piece = Shader::SMP_col3;
+      else {
+        GLCAT.error() << basename << " should be mat4, not vec4\n";
+        return false;
+      }
+    } else if (pieces[0] == "row3") {
+      // We'll permit this too, simply because we can support it.
+      switch (param_type) {
+      case GL_FLOAT:
+        bind._piece = Shader::SMP_row3x1;
+        break;
+      case GL_FLOAT_VEC2:
+        bind._piece = Shader::SMP_row3x2;
+        break;
+      case GL_FLOAT_VEC3:
+        bind._piece = Shader::SMP_row3x3;
+        break;
+      default:
+        GLCAT.error() << basename << " should be vec4\n";
+        return false;
+      }
+    } else if (pieces[0] == "trans" || pieces[0] == "tpose") {
+      GLCAT.error() << basename << " should be mat4 or mat3\n";
+      return false;
+    } else {
+      GLCAT.error() << basename << " should be vec4\n";
+      return false;
+    }
 
     if (!objShader->cp_parse_coord_sys(p, pieces, next, bind, true)) {
       return false;
@@ -194,6 +228,25 @@ parse_and_set_short_hand_shader_vars(Shader::ShaderArgId &arg_id, Shader *objSha
 
     objShader->cp_optimize_mat_spec(bind);
     objShader->_mat_spec.push_back(bind);
+
+    if (param_size > 1) {
+      // We support arrays of rows and arrays of columns, so we can
+      // run the GLSL shaders that cgc spits out.
+      if (bind._piece == Shader::SMP_row0 || bind._piece == Shader::SMP_col0) {
+        if (param_size > 4) {
+          GLCAT.warning() << basename << "[" << param_size << "] is too large, only the first four elements will be defined\n";
+          param_size = 4;
+        }
+        for (int i = 1; i < param_size; ++i) {
+          bind._id._seqno += 1;
+          bind._piece = (Shader::ShaderMatPiece)((int)bind._piece + 1);
+          objShader->_mat_spec.push_back(bind);
+        }
+      } else {
+        GLCAT.warning() << basename << "[" << param_size << "] should not be an array, only the first element will be defined\n";
+      }
+    }
+
     return true;
   }
   return false;
@@ -213,6 +266,8 @@ CLP(ShaderContext)(CLP(GraphicsStateGuardian) *glgsg, Shader *s) : ShaderContext
   _color_attrib_index = -1;
   _transform_table_index = -1;
   _slider_table_index = -1;
+  _frame_number_loc = -1;
+  _frame_number = -1;
   _validated = !gl_validate_shaders;
 
   nassertv(s->get_language() == Shader::SL_GLSL);
@@ -225,18 +280,29 @@ CLP(ShaderContext)(CLP(GraphicsStateGuardian) *glgsg, Shader *s) : ShaderContext
     return;
   }
 
-  // Create a buffer the size of the longest uniform name.
+  // Create a buffer the size of the longest uniform name.  Note
+  // that Intel HD drivers report values that are too low.
   GLint name_buflen = 0;
   _glgsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &name_buflen);
-  char* name_buffer = (char *)alloca(max(64, name_buflen));
+  name_buflen = max(64, name_buflen);
+  char *name_buffer = (char *)alloca(name_buflen);
 
 #ifndef OPENGLES
   // Get the used uniform blocks.
   if (_glgsg->_supports_uniform_buffers) {
-    GLint block_count, block_maxlength;
+    GLint block_count = 0, block_maxlength = 0;
     _glgsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_UNIFORM_BLOCKS, &block_count);
-    _glgsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &block_maxlength);
-    char *block_name_cstr = (char *)alloca(max(64, block_maxlength));
+
+    // Intel HD drivers report GL_INVALID_ENUM here.  They reportedly
+    // fixed it, but I don't know in which driver version the fix is.
+    if (_glgsg->_gl_vendor != "Intel") {
+      _glgsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &block_maxlength);
+      block_maxlength = max(64, block_maxlength);
+    } else {
+      block_maxlength = 1024;
+    }
+
+    char *block_name_cstr = (char *)alloca(block_maxlength);
 
     for (int i = 0; i < block_count; ++i) {
       block_name_cstr[0] = 0;
@@ -264,7 +330,8 @@ CLP(ShaderContext)(CLP(GraphicsStateGuardian) *glgsg, Shader *s) : ShaderContext
   // Now we've processed the uniforms, we'll process the attribs.
   _glgsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_ATTRIBUTES, &param_count);
   _glgsg->_glGetProgramiv(_glsl_program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &name_buflen);
-  name_buffer = (char *)alloca(max(64, name_buflen));
+  name_buflen = max(64, name_buflen);
+  name_buffer = (char *)alloca(name_buflen);
 
   _shader->_var_spec.clear();
   for (int i = 0; i < param_count; ++i) {
@@ -635,12 +702,16 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
         } else {
           bind._piece = Shader::SMP_transpose3x3;
         }
-      } else {
+      } else if (param_type == GL_FLOAT_MAT4) {
         if (transpose) {
           bind._piece = Shader::SMP_transpose;
         } else {
           bind._piece = Shader::SMP_whole;
         }
+      } else {
+        GLCAT.error()
+          << "Matrix input p3d_" << matrix_name << " should be mat3 or mat4\n";
+        return;
       }
       bind._arg[0] = NULL;
       bind._arg[1] = NULL;
@@ -676,7 +747,7 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
         bind._part[1] = Shader::SMO_identity;
 
         if (param_type != GL_FLOAT_MAT3) {
-          GLCAT.error() << "p3d_NormalMatrix input should be mat3, not mat4!\n";
+          GLCAT.warning() << "p3d_NormalMatrix input should be mat3, not mat4!\n";
         }
 
       } else if (matrix_name == "ModelMatrix") {
@@ -705,6 +776,27 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
           bind._part[0] = Shader::SMO_world_to_view;
           bind._part[1] = Shader::SMO_view_to_apiclip;
         }
+
+      } else if (matrix_name == "TextureMatrix") {
+        // We may support 2-D texmats later, but let's make sure that people
+        // don't think they can just use a mat3 to get the 2-D version.
+        if (param_type != GL_FLOAT_MAT4) {
+          GLCAT.error() << "p3d_TextureMatrix should be mat4[], not mat3[]!\n";
+          return;
+        }
+
+        bind._func = Shader::SMF_first;
+        bind._part[0] = inverse ? Shader::SMO_inv_texmat_i
+                                : Shader::SMO_texmat_i;
+        bind._part[1] = Shader::SMO_identity;
+        bind._dep[0] = Shader::SSD_general | Shader::SSD_tex_matrix;
+        bind._dep[1] = 0;
+
+        // Add it once for each index.
+        for (bind._index = 0; bind._index < param_size; ++bind._index) {
+          _shader->_mat_spec.push_back(bind);
+        }
+        return;
 
       } else {
         GLCAT.error() << "Unrecognized uniform matrix name '" << matrix_name << "'!\n";
@@ -888,7 +980,7 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
     if (noprefix == "TransformTable") {
       if (param_type != GL_FLOAT_MAT4) {
         GLCAT.error()
-          << "p3d_TransformTable should be uniform mat4\n";
+          << "p3d_TransformTable should be uniform mat4[]\n";
         return;
       }
       _transform_table_index = p;
@@ -898,7 +990,7 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
     if (noprefix == "SliderTable") {
       if (param_type != GL_FLOAT) {
         GLCAT.error()
-          << "p3d_SliderTable should be uniform float\n";
+          << "p3d_SliderTable should be uniform float[]\n";
         return;
       }
       _slider_table_index = p;
@@ -912,8 +1004,6 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
     string noprefix(name_buffer + 4);
     // These inputs are supported by OpenSceneGraph.  We can support
     // them as well, to increase compatibility.
-    // Other inputs we may support in the future:
-    // int osg_FrameNumber
 
     Shader::ShaderMatSpec bind;
     bind._id = arg_id;
@@ -930,7 +1020,7 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
       _shader->_mat_spec.push_back(bind);
       return;
 
-    } else if (noprefix == "InverseViewMatrix") {
+    } else if (noprefix == "InverseViewMatrix" || noprefix == "ViewMatrixInverse") {
       bind._piece = Shader::SMP_whole;
       bind._func = Shader::SMF_compose;
       bind._part[0] = Shader::SMO_apiview_to_view;
@@ -959,11 +1049,21 @@ reflect_uniform(int i, char *name_buffer, GLsizei name_buflen) {
       bind._dep[1] = Shader::SSD_NONE;
       _shader->_mat_spec.push_back(bind);
       return;
+
+    } else if (noprefix == "FrameNumber") {
+      // We don't currently support ints with this mechanism,
+      // so we special-case this one.
+      if (param_type != GL_INT) {
+        GLCAT.error() << "osg_FrameNumber should be uniform int\n";
+      } else {
+        _frame_number_loc = p;
+      }
+      return;
     }
 
   } else {
     // Tries to parse shorthand notations like mspos_XXX and trans_model_to_clip_of_XXX
-    if (parse_and_set_short_hand_shader_vars(arg_id, _shader)) {
+    if (parse_and_set_short_hand_shader_vars(arg_id, param_type, param_size, _shader)) {
       return;
     }
   }
@@ -1461,6 +1561,14 @@ issue_parameters(int altered) {
     return;
   }
 
+  if (_frame_number_loc != -1) {
+    int current_frame = ClockObject::get_global_clock()->get_frame_count();
+    if (current_frame != _frame_number) {
+      _glgsg->_glUniform1i(_frame_number_loc, current_frame);
+      _frame_number = current_frame;
+    }
+  }
+
   // Iterate through _ptr parameters
   for (int i = 0; i < (int)_shader->_ptr_spec.size(); ++i) {
     Shader::ShaderPtrSpec &spec = _shader->_ptr_spec[i];
@@ -1473,6 +1581,7 @@ issue_parameters(int altered) {
       }
 
       GLint p = spec._id._seqno;
+      int array_size = min(spec._dim[0], (int)ptr_data->_size / spec._dim[1]);
       switch (spec._type) {
       case Shader::SPT_float:
         {
@@ -1481,16 +1590,16 @@ issue_parameters(int altered) {
           switch (ptr_data->_type) {
           case Shader::SPT_int:
             // Convert int data to float data.
-            data = (float*) alloca(sizeof(float) * spec._dim[0] * spec._dim[1]);
-            for (int i = 0; i < (spec._dim[0] * spec._dim[1]); ++i) {
+            data = (float*) alloca(sizeof(float) * array_size * spec._dim[1]);
+            for (int i = 0; i < (array_size * spec._dim[1]); ++i) {
               data[i] = (float)(((int*)ptr_data->_ptr)[i]);
             }
             break;
 
           case Shader::SPT_double:
             // Downgrade double data to float data.
-            data = (float*) alloca(sizeof(float) * spec._dim[0] * spec._dim[1]);
-            for (int i = 0; i < (spec._dim[0] * spec._dim[1]); ++i) {
+            data = (float*) alloca(sizeof(float) * array_size * spec._dim[1]);
+            for (int i = 0; i < (array_size * spec._dim[1]); ++i) {
               data[i] = (float)(((double*)ptr_data->_ptr)[i]);
             }
             break;
@@ -1504,12 +1613,12 @@ issue_parameters(int altered) {
           }
 
           switch (spec._dim[1]) {
-          case 1: _glgsg->_glUniform1fv(p, spec._dim[0], (float*)data); continue;
-          case 2: _glgsg->_glUniform2fv(p, spec._dim[0], (float*)data); continue;
-          case 3: _glgsg->_glUniform3fv(p, spec._dim[0], (float*)data); continue;
-          case 4: _glgsg->_glUniform4fv(p, spec._dim[0], (float*)data); continue;
-          case 9: _glgsg->_glUniformMatrix3fv(p, spec._dim[0], GL_FALSE, (float*)data); continue;
-          case 16: _glgsg->_glUniformMatrix4fv(p, spec._dim[0], GL_FALSE, (float*)data); continue;
+          case 1: _glgsg->_glUniform1fv(p, array_size, (float*)data); continue;
+          case 2: _glgsg->_glUniform2fv(p, array_size, (float*)data); continue;
+          case 3: _glgsg->_glUniform3fv(p, array_size, (float*)data); continue;
+          case 4: _glgsg->_glUniform4fv(p, array_size, (float*)data); continue;
+          case 9: _glgsg->_glUniformMatrix3fv(p, array_size, GL_FALSE, (float*)data); continue;
+          case 16: _glgsg->_glUniformMatrix4fv(p, array_size, GL_FALSE, (float*)data); continue;
           }
           nassertd(false) continue;
         }
@@ -1526,10 +1635,10 @@ issue_parameters(int altered) {
 
         } else {
           switch (spec._dim[1]) {
-          case 1: _glgsg->_glUniform1iv(p, spec._dim[0], (int*)ptr_data->_ptr); continue;
-          case 2: _glgsg->_glUniform2iv(p, spec._dim[0], (int*)ptr_data->_ptr); continue;
-          case 3: _glgsg->_glUniform3iv(p, spec._dim[0], (int*)ptr_data->_ptr); continue;
-          case 4: _glgsg->_glUniform4iv(p, spec._dim[0], (int*)ptr_data->_ptr); continue;
+          case 1: _glgsg->_glUniform1iv(p, array_size, (int*)ptr_data->_ptr); continue;
+          case 2: _glgsg->_glUniform2iv(p, array_size, (int*)ptr_data->_ptr); continue;
+          case 3: _glgsg->_glUniform3iv(p, array_size, (int*)ptr_data->_ptr); continue;
+          case 4: _glgsg->_glUniform4iv(p, array_size, (int*)ptr_data->_ptr); continue;
           }
           nassertd(false) continue;
         }
@@ -2047,8 +2156,11 @@ update_shader_texture_bindings(ShaderContext *prev) {
       tex = _glgsg->_target_shader->get_shader_input_texture(id, &sampler);
 
     } else {
-      // Numbered texture input.
       if (spec._stage >= texattrib->get_num_on_stages()) {
+        // Apply a white texture in order to make it easier to use a shader
+        // that takes a texture on a model that doesn't have a texture applied.
+        _glgsg->_glActiveTexture(GL_TEXTURE0 + i);
+        _glgsg->apply_white_texture();
         continue;
       }
       TextureStage *stage = texattrib->get_on_stage(spec._stage);
@@ -2342,13 +2454,13 @@ glsl_compile_and_link() {
   if (!_shader->get_text(Shader::ST_geometry).empty()) {
     valid &= glsl_compile_shader(Shader::ST_geometry);
 
-    // Set the vertex output limit to the maximum.
-    // This is slow, but it is probably reasonable to require
-    // the user to override this in his shader using layout().
-    nassertr(_glgsg->_glProgramParameteri != NULL, false);
-    GLint max_vertices;
-    glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &max_vertices);
-    _glgsg->_glProgramParameteri(_glsl_program, GL_GEOMETRY_VERTICES_OUT_ARB, max_vertices);
+    //XXX Actually, it turns out that this is unavailable in the core
+    // version of geometry shaders.  Probably no need to bother with it.
+
+    //nassertr(_glgsg->_glProgramParameteri != NULL, false);
+    //GLint max_vertices;
+    //glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &max_vertices);
+    //_glgsg->_glProgramParameteri(_glsl_program, GL_GEOMETRY_VERTICES_OUT_ARB, max_vertices);
   }
 #endif
 
