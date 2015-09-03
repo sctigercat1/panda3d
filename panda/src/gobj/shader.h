@@ -132,7 +132,7 @@ public:
     SMO_plight_x,
     SMO_slight_x,
     SMO_satten_x,
-    SMO_texmat_x,
+    SMO_texmat_i,
     SMO_plane_x,
     SMO_clipplane_x,
 
@@ -190,6 +190,8 @@ public:
     SMO_apiview_to_model,
     SMO_apiview_to_apiclip,
     SMO_apiclip_to_apiview,
+
+    SMO_inv_texmat_i,
 
     SMO_INVALID
   };
@@ -270,6 +272,7 @@ public:
     SSD_fog           = 0x040,
     SSD_light         = 0x080,
     SSD_clip_planes   = 0x100,
+    SSD_tex_matrix    = 0x200,
   };
 
   enum ShaderBug {
@@ -297,6 +300,7 @@ public:
     ShaderArgType     _type;
     ShaderArgDir      _direction;
     bool              _varying;
+    bool              _integer;
     NotifyCategory   *_cat;
   };
 
@@ -478,14 +482,7 @@ public:
                           bool &success);
 #endif
 
-  bool compile_parameter(const ShaderArgId        &arg_id,
-                         const ShaderArgClass     &arg_class,
-                         const ShaderArgClass     &arg_subclass,
-                         const ShaderArgType      &arg_type,
-                         const ShaderArgDir       &arg_direction,
-                         bool                      arg_varying,
-                         int                      *arg_dim,
-                         NotifyCategory           *arg_cat);
+  bool compile_parameter(ShaderArgInfo &p, int *arg_dim);
 
   void clear_parameters();
 

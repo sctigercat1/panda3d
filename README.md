@@ -31,11 +31,6 @@ command prompt using the following command:
 
 ```bash
 compile.bat
-```
-
-Note that it does **not** build completely. It should stop at _Generating pandac tree..._. Then, run:
-
-```bash
 postbuild.bat
 ```
 
