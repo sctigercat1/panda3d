@@ -484,8 +484,12 @@ def LocateBinary(binary):
         binary += '.exe'
         
     basename = os.path.basename(binary)
-    if os.path.isfile('prebuilt/' + basename):
-        return 'prebuilt/' + basename
+    prebuilt = 'prebuilt/%s/%s' % (GetHost(), basename)
+    if os.path.isfile(prebuilt):
+        return prebuilt
+
+    elif GetHost() == 'darwin' and os.path.isfile('prebuilt/darwin/' + basename):
+        return 'prebuilt/darwin/' + basename
 
     if GetHost() == 'windows':
         if not binary.endswith('.exe'):

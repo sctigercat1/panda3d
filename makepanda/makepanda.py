@@ -1329,7 +1329,11 @@ def CompileIgate(woutd,wsrc,opts):
         ConditionalWriteFile(woutd, "")
         return (wobj, woutc, opts)
 
-    if not CrossCompiling():
+    prebuilt = LocateBinary('interrogate')
+    if prebuilt:
+        cmd = prebuilt
+
+    elif not CrossCompiling():
         # If we're compiling for this platform, we can use the one we've built.
         cmd = os.path.join(GetOutputDir(), 'bin', 'interrogate')
     else:
@@ -1400,6 +1404,10 @@ def CompileImod(wobj, wsrc, opts):
         WriteFile(woutc, "")
         CompileCxx(wobj, woutc, opts)
         return
+
+    prebuilt = LocateBinary('interrogate')
+    if prebuilt:
+        cmd = prebuilt
 
     if not CrossCompiling():
         # If we're compiling for this platform, we can use the one we've built.
