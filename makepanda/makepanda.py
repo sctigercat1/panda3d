@@ -1405,11 +1405,11 @@ def CompileImod(wobj, wsrc, opts):
         CompileCxx(wobj, woutc, opts)
         return
 
-    prebuilt = LocateBinary('interrogate')
+    prebuilt = LocateBinary('interrogate_module')
     if prebuilt:
         cmd = prebuilt
 
-    if not CrossCompiling():
+    elif not CrossCompiling():
         # If we're compiling for this platform, we can use the one we've built.
         cmd = os.path.join(GetOutputDir(), 'bin', 'interrogate_module')
     else:
