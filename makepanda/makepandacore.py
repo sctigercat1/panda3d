@@ -1988,11 +1988,11 @@ def SdkLocateMSPlatform(strMode = 'default'):
     if (platsdk and not os.path.isdir(platsdk)):
         platsdk = None
 
+    # Try some common SDK locations.  Worth a shot.
     if not platsdk:
-        # Most common location.  Worth a try.
-        platsdk = "C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1"
-        if not os.path.isdir(platsdk):
-            platsdk = None
+        for x in ("C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1", "C:\\Program Files (x86)\\Microsoft SDKs\\Windows\\v7.1A"):
+            if os.path.isdir(x):
+                platsdk = x
 
     if not platsdk:
         exit("Couldn't find Windows SDK v7.1")
